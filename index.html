@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#202623" />
+    <title>Island Study | Roosevelt Island</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Island Study home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="brand-name">FIELD<span>STUDY</span></span>
+      </a>
+      <div class="project-name">
+        <span class="eyebrow">PLACE &amp; CHANGE / 01</span>
+        <span class="project-title">Roosevelt Island</span>
+      </div>
+      <div class="topbar-meta"><span class="status-dot"></span> EXPLORATION MODE</div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar" aria-label="Map information">
+        <div class="sidebar-heading">
+          <span class="eyebrow">STUDY AREA</span>
+          <h1>Roosevelt<br />Island</h1>
+          <p class="location-line"><span class="location-pin" aria-hidden="true"></span> New York City, New York</p>
+        </div>
+
+        <section class="panel-section">
+          <div class="section-heading">
+            <span class="eyebrow">MAP STYLE</span>
+            <span class="section-index">01</span>
+          </div>
+          <div class="style-switch" role="group" aria-label="Basemap style">
+            <button class="style-button is-active" type="button" data-style="light" aria-pressed="true">
+              <span class="style-swatch swatch-light" aria-hidden="true"></span>Light
+            </button>
+            <button class="style-button" type="button" data-style="street" aria-pressed="false">
+              <span class="style-swatch swatch-street" aria-hidden="true"></span>Street
+            </button>
+          </div>
+          <p class="section-note">A quiet context map keeps future place data in focus.</p>
+        </section>
+
+        <section class="panel-section layer-section">
+          <div class="section-heading">
+            <span class="eyebrow">STUDY LAYERS</span>
+            <span class="section-index">02</span>
+          </div>
+          <div class="layer-row">
+            <span class="layer-symbol boundary-symbol" aria-hidden="true"></span>
+            <span class="layer-label">Island boundary</span>
+            <span class="layer-state">AWAITING DATA</span>
+          </div>
+          <div class="layer-row">
+            <span class="layer-symbol place-symbol" aria-hidden="true"></span>
+            <span class="layer-label">Building footprints</span>
+            <span class="layer-state" id="building-state" aria-live="polite">LOADING</span>
+          </div>
+          <p class="section-note layer-note">Geometry: NYC DoITT · attributes: PLUTO / CSV</p>
+        </section>
+
+        <div class="sidebar-footer">
+          <span class="footer-rule"></span>
+          <span class="eyebrow">A PLACE-BASED IMPACT STUDY</span>
+        </div>
+      </aside>
+
+      <section class="map-shell" aria-label="Interactive map of Roosevelt Island">
+        <div id="map" role="application" aria-label="Map. Drag to pan and use the controls to zoom."></div>
+
+        <div class="map-title" aria-hidden="true">
+          <span class="map-kicker">EAST RIVER / NEW YORK</span>
+          <span class="map-title-name">40°45′45″N <i>·</i> 73°57′00″W</span>
+        </div>
+
+        <div class="map-controls" aria-label="Map controls">
+          <button class="map-control" type="button" data-action="zoom-in" aria-label="Zoom in" title="Zoom in">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+          </button>
+          <button class="map-control" type="button" data-action="zoom-out" aria-label="Zoom out" title="Zoom out">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12" /></svg>
+          </button>
+          <span class="control-divider"></span>
+          <button class="map-control home-control" type="button" data-action="home" aria-label="Reset map view" title="Reset map view">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 9.2 10 4l6.5 5.2M5.5 8v7.5h9V8M8.3 15.5v-4.2h3.4v4.2" /></svg>
+          </button>
+        </div>
+
+        <div class="map-caption">
+          <span class="caption-mark" aria-hidden="true"></span>
+          <span>ROOSEVELT ISLAND</span>
+          <span class="caption-divider"></span>
+          <span>MANHATTAN <b>·</b> QUEENS</span>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
