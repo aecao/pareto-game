@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { calculate } = require("../siting-model.js");
+const vm = require("node:vm");
 
 const payload = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/siting/pilot.json"), "utf8"));
 const sites = payload.sites.features.map((feature) => feature.properties);
@@ -13,11 +14,65 @@ const fixture = (id, extra = {}) => ({
   base_far_proxy_gsf: 1000, existing_units_removed: 0, unranked_reason: "", ...extra,
 });
 
-test("all 72 corrected pilot groups reproduce all 61 pipeline ranks and exact-score precision", () => {
+test("browser initial/reset defaults use 800 units without changing the saved pipeline baseline", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../siting.js"), "utf8");
+  const start = source.indexOf("function setSitingDefaults()");
+  const end = source.indexOf("function sitingStyle(", start);
+  assert.ok(start >= 0 && end > start);
+  const fields = Object.fromEntries(["units", "unitSize", "efficiency",
+    "accommodation", "removal", "assembly"].map((key) => [key, { value: "" }]));
+  const before = JSON.stringify(payload.defaults);
+  const context = vm.createContext({
+    sitingData: payload, sitingForm: { elements: { namedItem: (key) => fields[key] } },
+  });
+  vm.runInContext(source.slice(start, end) + "\nsetSitingDefaults();", context);
+  assert.equal(fields.units.value, 800);
+  assert.equal(fields.unitSize.value, defaults.unitSize);
+  assert.equal(fields.efficiency.value, defaults.efficiency * 100);
+  fields.units.value = 1200;
+  vm.runInContext("setSitingDefaults();", context);
+  assert.equal(fields.units.value, 800);
+  assert.equal(JSON.stringify(payload.defaults), before);
+  assert.equal(defaults.units, 5000);
+  const result = calculate(sites, { ...defaults, units: fields.units.value });
+  assert.equal(result.requiredGsf, 800 * 750 / 0.82);
+  assert.equal(result.targetMet, 8);
+});
+
+test("map colors show insufficient capacity in red independently of rank and selection", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../siting.js"), "utf8");
+  const start = source.indexOf("function sitingStyle(");
+  const end = source.indexOf("function renderSitingDetail(", start);
+  assert.ok(start >= 0 && end > start);
+  const mapPalette = { insufficient: "red", top: "blue", ranked: "green", unranked: "gray", selected: "black" };
+  const context = vm.createContext({ mapPalette, sitingSelectedId: null });
+  vm.runInContext(source.slice(start, end), context);
+  const style = (site) => {
+    context.site = site;
+    return vm.runInContext("sitingStyle(site)", context);
+  };
+  for (const units of [800, 1000, 5000]) {
+    for (const site of calculate(sites, changed({ units })).sites) {
+      const expected = site.targetMet === false ? "red"
+        : site.rank === null ? "gray" : site.rank <= 10 ? "blue" : "green";
+      assert.equal(style(site).fillColor, expected, `${units}: ${site.site_id}`);
+    }
+  }
+  const site = { site_id: "selected", rank: 1, targetMet: false };
+  assert.equal(style(site).color, "red");
+  context.sitingSelectedId = site.site_id;
+  assert.equal(style(site).color, "black");
+  assert.equal(style(site).fillColor, "red");
+  assert.equal(style({ ...site, rank: null }).dashArray, "4 3");
+  assert.equal(style({ ...site, targetMet: true }).fillColor, "blue");
+  assert.equal(style({ ...site, targetMet: null, rank: null }).fillColor, "gray");
+});
+
+test("all 176 expanded pilot groups reproduce all 155 pipeline ranks and exact-score precision", () => {
   const output = calculate(sites, defaults);
-  assert.equal(output.sites.length, 72);
-  assert.equal(output.ranked, 61);
-  assert.equal(output.unranked, 11);
+  assert.equal(output.sites.length, 176);
+  assert.equal(output.ranked, 155);
+  assert.equal(output.unranked, 21);
   assert.equal(output.targetMet, 0);
   assert.equal(output.requiredGsf, 5000 * 750 / 0.82);
   for (const site of output.sites) {
@@ -84,15 +139,17 @@ test("incomplete and single-lot groups stay visible and unranked under all weigh
   assert.ok(singleton.proxyUnits > 0);
 });
 
-test("corrected waterfront excludes Dutch Kills and its former creek-only site groups", () => {
-  assert.equal(payload.provenance.boundary_revision, "roosevelt_facing_v2");
-  assert.equal(payload.provenance.constituent_lots, 984);
-  assert.match(payload.provenance.shoreline_method, /exclusion BEFORE the 1000-ft buffer/);
+test("2000-foot corridor keeps the corrected shoreline and expanded membership", () => {
+  assert.equal(payload.provenance.boundary_revision, "roosevelt_facing_v3_2000ft");
+  assert.equal(payload.provenance.shoreline_buffer_ft, 2000);
+  assert.equal(payload.provenance.constituent_lots, 2621);
+  assert.equal(sites.reduce((sum, site) => sum + site.lot_count, 0), 2621);
+  assert.match(payload.provenance.shoreline_method, /exclusion BEFORE the 2000-ft buffer/);
+  assert.ok(sites.some((site) => site.site_id === "Q00554_4005540001"));
   for (const id of ["Q00291_4002910001", "Q00083_4000830001", "Q00084_4000840001"]) {
     assert.ok(!sites.some((site) => site.site_id === id), id);
   }
   const shoreline = payload.reference.features.find((feature) => feature.properties.name === "facing_shoreline");
-  const corridor = payload.reference.features.find((feature) => feature.properties.name === "candidate_corridor");
   // The excluded geographic mask surrounds the detached creek, not the East River shore.
   const inCreekMask = ([x, y]) => x > -73.9403 && x < -73.9383 && y > 40.7423 && y < 40.7434;
   const visit = (coordinates) => {
@@ -101,7 +158,7 @@ test("corrected waterfront excludes Dutch Kills and its former creek-only site g
     } else coordinates.forEach(visit);
   };
   visit(shoreline.geometry.coordinates);
-  visit(corridor.geometry.coordinates);
+  assert.equal(sites.find((site) => site.site_id === "Q00018_4000180001").unmapped_subdistrict_routes, 1);
 });
 
 test("net gains can be negative and are not floored at zero", () => {

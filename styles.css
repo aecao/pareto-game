@@ -17,6 +17,7 @@
   --map-top: var(--blue);
   --map-ranked: var(--accent-2);
   --map-unranked: #777;
+  --map-insufficient: #c62828;
   --map-selected: var(--ink);
   --map-corridor: var(--blue);
   --map-island: #757575;
@@ -147,6 +148,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .siting-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 11px; margin-top: 14px; }
 .siting-legend span { width: 9px; height: 9px; display: inline-block; margin-left: 5px; }
 .legend-top { background: var(--map-top); }
+.legend-insufficient { background: var(--map-insufficient); }
 .legend-ranked { background: var(--map-ranked); }
 .legend-unranked { background: var(--map-unranked); border: 1px dashed var(--ink); }
 .siting-detail { padding: 20px; border-bottom: 1px solid var(--line); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }

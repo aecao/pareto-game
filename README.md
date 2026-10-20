@@ -8,9 +8,12 @@ The interface follows the visual language of [aecao/portfolio](https://github.co
 Helvetica Neue / Helvetica / Arial, light body text, bold headings, white panels,
 near-black text (`#15120f`), thin rules and square-edged controls. Navigation uses
 a black outline for the active mode and black/white hover states. The portfolio's
-blue (`#0035ff`) identifies top-ten sites, focus and selection accents; teal
-(`#2a6c68`) marks other ranked sites, and terracotta (`#b8432f`) marks review
-warnings and building footprints. Unranked sites remain gray and dashed.
+blue (`#0035ff`) identifies top-ten sites meeting the current proxy target,
+focus and selection accents; teal (`#2a6c68`) marks other ranked sites meeting
+the target. Sites with known insufficient capacity are red (`#c62828`),
+regardless of rank, and recolor when assumptions change. Other unranked or
+unknown-capacity sites remain gray; all unranked sites retain dashed outlines.
+Terracotta (`#b8432f`) marks review warnings and building footprints.
 
 UI and Leaflet overlay colors share the CSS custom properties in `styles.css`,
 so map polygons and their legend stay consistent. Labels and warnings remain
@@ -88,8 +91,8 @@ rejection. GitHub Pages runs both Siting and Connectivity tests.
 Select **Siting** in the header to explore the Queens waterfront pilot. The
 existing **Explore** view and its building popups remain available.
 
-The corrected pilot contains **72 groups / 984 tax lots**: 61 ranked multi-lot
-assemblages and 11 unranked groups (eight singletons and three groups with
+The expanded pilot contains **176 groups / 2,621 tax lots**: 155 ranked multi-lot
+assemblages and 21 unranked groups (17 singletons and four groups with
 incomplete inputs). All remain visible on the map and in the ranking list.
 Map selection and list selection share a detail panel. Top-ten ranks are
 numbered on the map; park overlap and unresolved zoning conditions remain
@@ -99,7 +102,7 @@ The controls recalculate locally, without a database connection:
 
 | Parameter | Default |
 |---|---|
-| Gross new affordable units | 5,000 |
+| Gross new affordable units | 800 |
 | Net unit size | 750 square feet |
 | Net-to-gross efficiency | 82% |
 | Target accommodation weight | 40% |
@@ -110,7 +113,9 @@ Weights must be nonnegative and total 100%. Custom weights are labeled
 exploratory, not the approved baseline policy. Invalid/blank inputs show an
 explicit error and mark the displayed values as the **last valid results**.
 Reset restores all six defaults. Input changes do not persist across reloads
-and do not change the source snapshot or Python pipeline outputs.
+and do not change the source snapshot or Python pipeline outputs. The browser's
+initial and reset target is 800 units; the saved source snapshot and pipeline
+baseline remain 5,000 units.
 
 ### What the ranking means
 
@@ -121,7 +126,7 @@ and do not change the source snapshot or Python pipeline outputs.
   replacement, **not unused FAR, verified legal entitlement or buildable yield**.
 - Accommodation = `min(proxy floor area / required floor area, 1)`.
   Fewer removals and fewer lots use inverse min-max normalization within the
-  61 complete multi-lot candidates. Constant components tie at one.
+  155 complete multi-lot candidates. Constant components tie at one.
 - Score = 100 × weighted component sum. Scores are not feasibility percentages.
   Exact-score ties share minimum rank; site ID orders tied rows. Displayed
   scores are rounded but ranks use full precision.
@@ -129,17 +134,23 @@ and do not change the source snapshot or Python pipeline outputs.
   gross target minus existing units removed, not an achieved forecast, net
   affordable-unit gain, or displaced-household count. Unknowns stay unknown;
   singles and incomplete groups never become ranked by changing weights.
-- At defaults, **zero of 61 ranked sites** meet 5,000 units under the proxy.
+- At the 800-unit browser default, **eight of 155 ranked sites** meet the proxy target.
+  At the saved 5,000-unit baseline, **zero of 155 ranked sites** meet the target.
   At a 1,000-unit target with other defaults unchanged, seven meet the proxy
   target. Neither result demonstrates legal/financial/engineering feasibility.
 
-The 1,000-foot shoreline corridor is a speculative screening boundary, not a
-landing or bridge-approach standard. Boundary revision `roosevelt_facing_v2`
+The 2,000-foot shoreline corridor is a speculative screening boundary, not a
+landing or bridge-approach standard. Boundary revision `roosevelt_facing_v3_2000ft`
 excludes the detached Dutch Kills creek shoreline **before buffering** because
-it does not face Roosevelt Island. This removes 29 creek-only groups, including
-`Q00291_4002910001` and the former #7/#9 groups, rather than just hiding a site
-in the browser. Scores/ranks are regenerated against the corrected cohort.
-The first six ranks are unchanged; the new #7 is `Q00024_4000240001`.
+it does not face Roosevelt Island. Doubling the former 1,000-foot corridor
+adds 104 groups while retaining all 72 previous groups. Whole assemblages that
+intersect the corridor are retained, including portions farther inland.
+Scores/ranks are regenerated over the expanded cohort. One lot in
+`Q00018_4000180001` intersects the East River Subdistrict, whose chapter/section
+mapping remains unresolved; the site detail explicitly flags manual rule lookup.
+No effective zoning capacity is assigned.
+The 1,000-foot outputs and web snapshot are preserved in the companion workspace
+under `outputs/archive/20261020_before_2000ft_corridor/`.
 The previous 101-group snapshot is archived in the companion POSTGIS workspace
 under `outputs/archive/20261020_before_creek_correction/`.
 Assemblages are maximal shared-edge groups
@@ -174,7 +185,7 @@ POSTGIS workspace (substitute the app checkout path):
 ```
 
 The exporter refuses overwrites and verifies the source manifests first. The
-validator compares JavaScript against Python for all 72 groups across five
+validator compares JavaScript against Python for all 176 groups across six
 scenarios, including unit targets, unit size/efficiency and weights. Changing
 eligibility, site geometry, source capacity or source policy requires a new
 reviewed pipeline snapshot, not just a browser control.

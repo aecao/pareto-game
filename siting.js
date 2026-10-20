@@ -38,7 +38,7 @@ function readSitingParameters() {
 function setSitingDefaults() {
   const defaults = sitingData.defaults;
   for (const [name, value] of Object.entries({
-    units: defaults.units, unitSize: defaults.unitSize, efficiency: defaults.efficiency * 100,
+    units: 800, unitSize: defaults.unitSize, efficiency: defaults.efficiency * 100,
     accommodation: defaults.weights.accommodation * 100,
     removal: defaults.weights.removal * 100, assembly: defaults.weights.assembly * 100,
   })) sitingForm.elements.namedItem(name).value = value;
@@ -46,7 +46,8 @@ function setSitingDefaults() {
 
 function sitingStyle(site) {
   const selected = site.site_id === sitingSelectedId;
-  const color = site.rank === null ? mapPalette.unranked : site.rank <= 10 ? mapPalette.top : mapPalette.ranked;
+  const color = site.targetMet === false ? mapPalette.insufficient
+    : site.rank === null ? mapPalette.unranked : site.rank <= 10 ? mapPalette.top : mapPalette.ranked;
   return {
     color: selected ? mapPalette.selected : color, weight: selected ? 3 : 1.3,
     fillColor: color, fillOpacity: selected ? 0.7 : 0.38,
@@ -90,6 +91,7 @@ function renderSitingDetail() {
   if (site.condo_review) flags.append(sitingNode("li", "Condominium structure requires review."));
   if (site.zone_set_difference_lots > 0) flags.append(sitingNode("li", `PLUTO/mapped zoning labels differ on ${site.zone_set_difference_lots} lots; not automatically a legal zoning change.`));
   if (site.split_or_boundary_review_lots > 0) flags.append(sitingNode("li", `Split zoning or boundary coverage review: ${site.split_or_boundary_review_lots} lots.`));
+  if (site.unmapped_subdistrict_routes > 0) flags.append(sitingNode("li", `${site.unmapped_subdistrict_routes} lot/subdistrict rule routes require manual chapter/section lookup; no effective zoning capacity assigned.`));
   flags.append(sitingNode("li", "Legal capacity, land control, affordability delivery and displacement remain unverified."));
   panel.append(flags);
   const zoning = [

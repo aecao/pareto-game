@@ -2,7 +2,7 @@ const islandCenter = [40.7625, -73.9497];
 const islandZoom = 15.2;
 const themeStyles = getComputedStyle(document.documentElement);
 const mapPalette = Object.fromEntries([
-  "top", "ranked", "unranked", "selected", "corridor", "island",
+  "top", "ranked", "unranked", "insufficient", "selected", "corridor", "island",
   "building", "building-fill", "building-hover", "building-hover-fill",
 ].map((key) => [key, themeStyles.getPropertyValue(`--map-${key}`).trim()]));
 const studyBounds = L.latLngBounds(
