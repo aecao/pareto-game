@@ -79,7 +79,7 @@ async function loadConnectivity() {
   connectivityError.hidden = true;
   connectivityState.textContent = "Loading verified walking snapshot...";
   try {
-    const response = await fetch("assets/connectivity/walking.json");
+    const response = await fetch("assets/connectivity/walking.json?v=island-landing-v1", { cache: "no-cache" });
     if (!response.ok) throw new Error(`Walking snapshot unavailable (${response.status}).`);
     const data = ConnectivityModel.validate(await response.json());
     connectivityData = data;

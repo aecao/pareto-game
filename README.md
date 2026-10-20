@@ -68,7 +68,10 @@ with no success-shaped defaults. Switching modes while loading cannot turn
 Connectivity layers on in another mode.
 
 To refresh, independently validate the walking outputs, archive the existing
-web snapshot, then run from the POSTGIS workspace:
+web snapshot, then run from the POSTGIS workspace. When changing the snapshot
+contract, bump the shared `v` release token on both Connectivity scripts, the
+snapshot fetch and the download link so cached validators cannot load a newer
+incompatible snapshot. Snapshot fetches also revalidate the HTTP cache.
 
 ```powershell
 .\.venv\Scripts\python.exe .\01_sites\validate_walking_bridge.py

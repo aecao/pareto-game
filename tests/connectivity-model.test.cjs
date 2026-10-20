@@ -2,6 +2,19 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const model = require("../connectivity-model.js");
 const data = require("../assets/connectivity/walking.json");
+const fs = require("node:fs");
+const path = require("node:path");
+
+test("Connectivity scripts, fetch and download share a cache-busting release", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const loader = fs.readFileSync(path.join(__dirname, "../connectivity.js"), "utf8");
+  const modelVersion = html.match(/src="connectivity-model\.js\?v=([^"]+)"/);
+  assert.ok(modelVersion, "validator must have a release version");
+  const version = modelVersion[1];
+  assert.ok(html.includes(`src="connectivity.js?v=${version}"`));
+  assert.ok(html.includes(`href="assets/connectivity/walking.json?v=${version}"`));
+  assert.ok(loader.includes(`fetch("assets/connectivity/walking.json?v=${version}", { cache: "no-cache" })`));
+});
 
 test("verified walking snapshot validates without mutation", () => {
   const original = JSON.stringify(data);
