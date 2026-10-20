@@ -138,9 +138,15 @@
         </section>
 
         <section class="market-only market-parameters" hidden aria-labelledby="market-heading">
-          <span class="eyebrow">PUBLISHED MONTHLY SERIES</span>
+          <span class="eyebrow">MARKET CONTEXT / SCENARIOS</span>
           <h1 id="market-heading">Market</h1>
           <p class="section-note">Explore market context, not parcel valuations or a fitted rent model.</p>
+          <div class="market-view-switch" role="group" aria-label="Market view">
+            <button type="button" data-market-view="series" aria-pressed="true" class="is-active">Monthly series</button>
+            <button type="button" data-market-view="scenario" aria-pressed="false">Explanatory model</button>
+            <button type="button" data-market-view="far" aria-pressed="false">Optimal FAR</button>
+          </div>
+          <div data-market-panel="series">
           <fieldset id="market-fields" disabled>
             <legend>Series selection</legend>
             <label for="market-metric">Metric</label>
@@ -163,6 +169,31 @@
             <p>These aggregates do not establish achieved rents, unit-level prices, an affordable/market-rate mix or a causal bridge premium. Historical release dates are unverified; these are not prediction-safe features.</p>
             <a href="assets/market/monthly.json" download>Download all series (JSON)</a>
           </details>
+          </div>
+          <div data-market-panel="scenario" hidden>
+            <p class="siting-warning">Illustrative only. Not calibrated to Queens, observed rent data or bridge accessibility results.</p>
+            <form id="scenario-form">
+              <fieldset id="scenario-fields" disabled>
+                <legend>Teaching assumptions</legend>
+              </fieldset>
+              <button id="scenario-reset" type="button" class="secondary-button" disabled>Reset assumptions</button>
+            </form>
+            <p id="scenario-state" role="status" aria-live="polite">Select Explanatory model to load assumptions.</p>
+            <p id="scenario-error" class="siting-error" role="alert" hidden></p>
+            <button id="scenario-retry" type="button" class="secondary-button" hidden>Retry model assumptions</button>
+          </div>
+          <div data-market-panel="far" hidden>
+            <p class="siting-warning">Illustrative density economics. Not observed prices, construction-cost estimates, appraisals or verified zoning capacity.</p>
+            <form id="far-form">
+              <fieldset id="far-fields" disabled>
+                <legend>FAR teaching assumptions</legend>
+              </fieldset>
+              <button id="far-reset" type="button" class="secondary-button" disabled>Reset FAR assumptions</button>
+            </form>
+            <p id="far-state" role="status" aria-live="polite">Select Optimal FAR to load assumptions.</p>
+            <p id="far-error" class="siting-error" role="alert" hidden></p>
+            <button id="far-retry" type="button" class="secondary-button" hidden>Retry FAR assumptions</button>
+          </div>
         </section>
 
         <div class="sidebar-footer exploration-only">
@@ -234,7 +265,8 @@
           <p class="section-note">The baseline reaches Queens over the existing crossing; the hypothetical bridge adds a different Queens connection from the island-side origin.</p>
         </section>
       </aside>
-      <section class="market-only market-results" hidden aria-label="Market series results">
+      <section class="market-only market-results" hidden aria-label="Market results">
+        <div data-market-panel="series">
         <span class="eyebrow">MARKET CONTEXT / NO SPATIAL CROSSWALK</span>
         <h2 id="market-title">Monthly market data</h2>
         <p id="market-description" class="section-note"></p>
@@ -249,6 +281,80 @@
           </table>
         </div>
         <p id="market-provenance" class="section-note"></p>
+        </div>
+        <div data-market-panel="scenario" hidden>
+          <span class="eyebrow">FOUR-QUADRANT TEACHING MODEL / REFERENCE = 100</span>
+          <h2>Real estate: property &amp; asset markets</h2>
+          <p class="section-note">A simplified DiPasquale–Wheaton-style model connecting space demand, investment value, annual construction and stock replacement. Each axis is separately indexed: 100 rent is not 100 dollars, and 100 annual flow is not 100 square feet or 100% of stock.</p>
+          <p class="siting-warning">No observed data are used in this model. Curves, shifts and equilibria are conditional illustrations, not local forecasts or evidence of a causal bridge premium.</p>
+          <label class="scenario-focus-label" for="scenario-focus">Curves for scenario</label>
+          <select id="scenario-focus" disabled>
+            <option value="baseline">No intervention</option>
+            <option value="bridge">Bridge only</option>
+            <option value="redevelopment">Redevelopment only</option>
+            <option value="combined" selected>Bridge + redevelopment</option>
+          </select>
+          <div class="scenario-legend" aria-label="Scenario colors">
+            <span class="scenario-baseline">No intervention (dashed)</span>
+            <span class="scenario-bridge">Bridge only (dotted)</span>
+            <span class="scenario-redevelopment">Redevelopment only (dash-dot)</span>
+            <span class="scenario-combined">Combined (solid)</span>
+          </div>
+          <div id="scenario-chart" class="scenario-chart" tabindex="0" role="region" aria-label="Scrollable four-quadrant diagram"></div>
+          <p class="section-note">Axis and quadrant names match the reference diagram. Despite its conventional $ and sq. ft. labels, this illustration still displays independent indices, not dollars or measured floor area; construction remains an annual net-delivery flow. Gray curves belong to the selected scenario; colored loops connect each scenario's long-run equilibrium across the four quadrants. All curve segments use the current assumptions. Axis scales expand together to fit all results; curve tails are clipped to the plot.</p>
+          <p id="scenario-summary" role="status" aria-live="polite">Waiting for illustrative assumptions.</p>
+          <div class="scenario-table-scroll" tabindex="0" role="region" aria-label="Scrollable scenario comparison">
+            <table class="ranking-table scenario-table">
+              <caption>Independent indices, reference = 100. Short run holds stock at reference 100, before any construction response; long run assumes sustained flows balance losses. No forecast duration is specified.</caption>
+              <thead><tr><th scope="col">Scenario</th><th scope="col">Short-run rent</th><th scope="col">Short-run value</th><th scope="col">Long-run rent</th><th scope="col">Long-run value</th><th scope="col">Annual net delivery</th><th scope="col">Long-run stock</th></tr></thead>
+              <tbody id="scenario-values"></tbody>
+            </table>
+          </div>
+          <details class="method-note scenario-method">
+            <summary>Equations, assumptions &amp; interpretation</summary>
+            <p>Lower-case r, p, s and c are ratios to separate rent, value, stock and annual-flow references. The table/diagram multiply these ratios by 100. At default common parameters and with no intervention, all four indices equal 100.</p>
+            <ol>
+              <li><strong>Space demand:</strong> r = d × s<sup>−1/ε</sup>. ε is demand elasticity magnitude; d = 1 + assumed bridge willingness-to-pay shift for bridge scenarios, otherwise 1.</li>
+              <li><strong>Asset value:</strong> p = r / k, where k is the cap-rate multiplier. NOI is assumed proportional to rent with an unchanged operating-income margin; no separate expenses, concessions or vacancy changes are estimated.</li>
+              <li><strong>Development:</strong> c = (p / q)<sup>η</sup> + a. q is a delivery-cost multiplier; η is construction-response elasticity. a is the sustained additional net delivery in redevelopment scenarios, as a fraction of reference annual delivery, otherwise zero. This power curve has no hard feasibility threshold, land constraint or zoning cap.</li>
+              <li><strong>Stock balance:</strong> c = ℓ × s in long-run equilibrium. ℓ multiplies an unspecified reference loss rate. In physical units S<sub>t+1</sub> = S<sub>t</sub> + C<sub>t</sub> − L<sub>t</sub>; reference annual delivery C₀ = δ₀S₀. Neither δ₀ nor actual years/square feet are supplied.</li>
+            </ol>
+            <p>Construction here means net additions after project-specific removals, before background losses. Extra delivery is exogenous and assumed funded/deliverable; it is not a finding that redevelopment is profitable. Endogenous market construction can fall when added supply lowers rents. A one-off development should not be interpreted as a permanent annual increment.</p>
+            <p>The no-intervention scenario shares the current cap-rate, cost and loss assumptions. It may therefore differ from reference 100. Short-run redevelopment alone changes no stock yet; short-run values reflect rent/capitalization only, without anticipation of future supply. This is not a time-path or investment forecast.</p>
+            <p>Increasing supply can moderate rent relative to the bridge-only scenario without necessarily returning it to the no-intervention level. A bridge-demand shift is assumed, may be zero or negative, and is not inferred from the Connectivity walking graph. No district boundaries, units, affordability rules, stabilized rents, site capacity, costs, subsidy or 5,000-unit delivery target are modeled.</p>
+            <a href="assets/market/scenario.json" download>Download illustrative defaults and parameter limits (JSON)</a>
+          </details>
+        </div>
+        <div data-market-panel="far" hidden>
+          <span class="eyebrow">DENSITY / RESIDUAL LAND VALUE</span>
+          <h2>Optimal FAR</h2>
+          <p class="section-note">An original schematic of the economic relationship in the supplied Optimal FAR example: housing price declines with density, average non-land development cost rises, and land value is the surplus per housing square foot multiplied by FAR.</p>
+          <p class="siting-warning">One arbitrary monetary scale, not dollars or independently normalized indices. These curves are assumptions, not estimated Queens relationships. The ceiling is hypothetical, not legal entitlement.</p>
+          <div class="far-legend" aria-label="FAR diagram legend">
+            <span class="far-price">Housing price P</span><span class="far-cost">Average cost C</span>
+            <span class="far-land">Residual land value</span><span class="far-optimum">Unconstrained F* (dashed)</span>
+            <span class="far-cap">Hypothetical ceiling (dotted)</span><span class="far-crossing">P = C (dash-dot)</span>
+            <span class="far-chosen">Chosen optimum (large dots)</span>
+          </div>
+          <div id="far-chart" class="far-chart" tabindex="0" role="region" aria-label="Scrollable housing-price, cost and residual-land-value diagrams"></div>
+          <p id="far-summary" role="status" aria-live="polite">Waiting for illustrative FAR assumptions.</p>
+          <div class="far-table-scroll" tabindex="0" role="region" aria-label="Scrollable FAR model values">
+            <table class="ranking-table far-table">
+              <caption>Marker values; display rounded to two decimal places. P and C use arbitrary value units per gross residential sq. ft; residual uses the same monetary units per lot sq. ft. Curves retain negative extrapolated values; negatives are not observed prices.</caption>
+              <thead><tr><th scope="col">Point</th><th scope="col">FAR</th><th scope="col">Housing price P</th><th scope="col">Average cost C</th><th scope="col">Residual land value</th></tr></thead>
+              <tbody id="far-values"></tbody>
+            </table>
+          </div>
+          <details class="method-note scenario-method">
+            <summary>Equations &amp; what “optimal” means</summary>
+            <p>F = gross residential floor area / lot area. Housing price per gross residential square foot is P(F) = α − βF; average non-land development cost is C(F) = μ + γF. Land residual per lot square foot is L(F) = F[P(F) − C(F)] = (α − μ)F − (β + γ)F². Costs must include all non-land development costs and required return for an appraisal interpretation; here they are illustrative only.</p>
+            <p>Because β &gt; 0 and γ ≥ 0, the residual is strictly concave. Without a ceiling, F* = max(0, (α − μ) / [2(β + γ)]). Under a hypothetical ceiling F̄ ≥ 0, the chosen F = min(F*, F̄), allowing no new building at F = 0 with zero development residual. If α ≤ μ, no positive development residual exists. Existing-use land value is not assumed zero; it is simply excluded from this new-development calculation.</p>
+            <p>The positive price/cost crossing is F₀ = (α − μ) / (β + γ), if α &gt; μ. It has zero residual, not maximum residual. At the interior optimum, P + FP′ = C + FC′ (marginal total revenue equals marginal total cost); generally P is greater than average C there. For these linear curves, F* = F₀ / 2. When α = μ the only nonnegative crossing is zero; when α &lt; μ there is none.</p>
+            <p>The price slope summarizes an assumed density/quality/amenity tradeoff, not a claim that increasing FAR always lowers sale prices. Floor area and cost denominators are consistently gross residential area; rentable area, efficiency, unit mix and nonresidential uses are not modeled. Raising a ceiling above F* alone does not raise residual value in this model.</p>
+            <p>Demolition, acquisition of existing buildings, displacement, affordable-unit restrictions, taxes, vacancy, financing timing, bridge costs, engineering and approval risks are not separately estimated. Residual is not a market appraisal, net profit or proof of feasibility. Nothing changes Siting FAR inputs, rankings, the four-quadrant assumptions or the 5,000-unit baseline.</p>
+            <a href="assets/market/far.json" download>Download illustrative FAR defaults and limits (JSON)</a>
+          </details>
+        </div>
       </section>
     </main>
 
@@ -260,5 +366,9 @@
     <script src="connectivity.js"></script>
     <script src="market-model.js"></script>
     <script src="market.js"></script>
+    <script src="scenario-model.js"></script>
+    <script src="scenario.js"></script>
+    <script src="far-model.js"></script>
+    <script src="far.js"></script>
   </body>
 </html>

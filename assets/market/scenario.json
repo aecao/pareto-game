@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "status": "illustrative_not_locally_calibrated",
+  "reference_index": 100,
+  "assumption_note": "All defaults are teaching assumptions, not empirical Queens estimates. Rent, value, stock and annual delivery each have separate reference scales. No dollar amounts, floor areas, baseline loss rate or forecast years are specified.",
+  "parameters": [
+    {"id": "demandElasticity", "label": "Space-demand elasticity magnitude", "default": 1, "min": 0.2, "max": 3, "step": 0.1, "note": "ASSUMPTION: proportional space demand response to rent, holding demand shifters fixed."},
+    {"id": "supplyElasticity", "label": "Construction-response elasticity", "default": 1, "min": 0.2, "max": 3, "step": 0.1, "note": "ASSUMPTION: proportional annual market delivery response to value relative to cost."},
+    {"id": "bridgeDemandPercent", "label": "Bridge willingness-to-pay shift (%)", "default": 10, "min": -30, "max": 50, "step": 1, "note": "ASSUMPTION: rent-demand intercept shift at fixed stock; not an accessibility-derived or causal premium."},
+    {"id": "redevelopmentFlowPercent", "label": "Extra net annual delivery (% of reference flow)", "default": 10, "min": 0, "max": 100, "step": 1, "note": "ASSUMPTION: sustained additional delivery after project removals, before background stock losses; not a one-off stock addition or percent of stock."},
+    {"id": "capRateFactor", "label": "Cap-rate multiplier", "default": 1, "min": 0.5, "max": 2, "step": 0.05, "note": "ASSUMPTION: common financing shift for all four scenarios; 1 means the unspecified reference cap rate."},
+    {"id": "costFactor", "label": "Delivery-cost multiplier", "default": 1, "min": 0.5, "max": 2, "step": 0.05, "note": "ASSUMPTION: common all-in required-value cost shift, not a dollar construction-cost estimate."},
+    {"id": "lossFactor", "label": "Background stock-loss multiplier", "default": 1, "min": 0.5, "max": 2, "step": 0.05, "note": "ASSUMPTION: losses per unit of stock relative to an unspecified reference rate; no actual annual loss percentage is asserted."}
+  ]
+}

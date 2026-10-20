@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "illustrative_not_locally_calibrated",
+  "assumption_note": "Teaching assumptions only. Values use one arbitrary monetary unit, not dollars. FAR is gross residential floor area divided by lot area. No observed prices, costs or legally verified zoning limits are used.",
+  "parameters": [
+    {"id": "priceIntercept", "label": "Housing-price intercept (value units)", "default": 150, "min": 0, "max": 300, "step": 1, "note": "ASSUMPTION: sale value per gross residential square foot extrapolated to FAR zero; not a dollar estimate."},
+    {"id": "priceSlope", "label": "Housing-price decline per FAR", "default": 15, "min": 1, "max": 60, "step": 1, "note": "ASSUMPTION: price per housing square foot falls with density; this is not an estimated local relationship."},
+    {"id": "costIntercept", "label": "Average-cost intercept (value units)", "default": 50, "min": 0, "max": 300, "step": 1, "note": "ASSUMPTION: non-land average development cost per gross residential square foot at FAR zero."},
+    {"id": "costSlope", "label": "Average-cost increase per FAR", "default": 10, "min": 0, "max": 60, "step": 1, "note": "ASSUMPTION: average cost rises with density; not marginal construction cost. Financing and required return must be included here if desired."},
+    {"id": "farCap", "label": "Hypothetical FAR ceiling", "default": 4, "min": 0, "max": 20, "step": 0.1, "note": "ASSUMPTION: illustrative ceiling, not PLUTO FAR, zoning entitlement, site capacity or a legal finding. Zero prohibits new floor area."}
+  ]
+}

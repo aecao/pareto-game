@@ -258,3 +258,105 @@ and refuses overwrite. Archive the old JSON explicitly before refreshing:
 Pure model tests cover every metric/geography/month selection, missing periods,
 inclusive ranges, restricted index coverage, anomaly retention and corrupt
 payload rejection. Siting and Connectivity calculations are unchanged.
+
+### Explanatory property/asset-market model
+
+Inside Market, **Explanatory model** switches from the monthly viewer to a
+self-contained four-quadrant teaching model inspired by DiPasquale–Wheaton.
+It uses **no observed market or accessibility data**. It is not calibrated to
+Queens/CD1/CD2 and does not estimate dollar rents, values, floor areas or a
+causal bridge effect. Existing monthly geographies/metrics do not calibrate it.
+The monthly viewer and model have independent loading/error states.
+
+Each axis has a separate reference index of 100: annual per-area rent upward,
+per-area asset value leftward, annual **net delivery** downward and stock
+rightward. Net delivery means additions after project removals, before
+background losses; unlike gross construction it can be used directly in stock
+accounting. All four scenario loops appear together; the selected scenario
+determines the gray curves. Colors and dash patterns distinguish loops; an
+accessible table provides short-run and long-run results.
+
+Assumptions and technical input ranges live in
+[`assets/market/scenario.json`](assets/market/scenario.json), each explicitly
+marked `ASSUMPTION`, not an empirical estimate. Default demand/construction
+elasticities are 1, bridge willingness-to-pay shift is +10%, sustained extra
+net delivery is 10% of **reference annual flow**, and cap-rate, cost and loss
+multipliers are 1. Reset restores these illustrative values. No physical
+units, reference loss percentage, actual cap rate or forecast years are
+specified. Values do not persist across reloads.
+
+For ratios `r, p, c, s` (displayed as ratio × 100):
+
+1. Space demand: `r = d * s^(-1/epsilon)`.
+2. Asset valuation: `p = r / k` (unchanged proportional NOI margin).
+3. Development response: `c = (p/q)^eta + a`.
+4. Long-run replacement balance: `c = lossFactor * s`.
+
+`d` is 1 plus the assumed bridge demand percentage in bridge scenarios,
+otherwise 1. `a` is extra net annual flow divided by reference annual flow
+in redevelopment scenarios, otherwise zero. `k` and `q` are cap-rate and
+delivery-cost multipliers. A monotone, bracketed bisection solves the positive
+stock equilibrium; results must satisfy the stock-flow identity. In physical
+units, `C0 = delta0 * S0` at reference equilibrium: the independently normalized
+construction/stock axes do **not** imply annual construction equals all stock.
+The reference depreciation/loss rate `delta0` is deliberately unspecified.
+
+The four cases are no intervention, bridge only, redevelopment only and
+combined. All share the current common cap-rate, cost and loss assumptions,
+so no intervention can differ from reference 100. The short-run comparison
+holds stock at reference 100 before any delivery or loss response; it ignores
+anticipation of future supply. Only long-run loops appear in the diagram.
+No adjustment path or completion year is forecast.
+
+Extra delivery is assumed funded and sustained, not proven feasible or a
+one-off development translated into a permanent flow. The endogenous response
+may partially crowd out extra delivery. This smooth supply curve has no hard
+construction threshold, zoning/land cap, financing feasibility test or explicit
+vacancy/operating-cost model. Regulation, affordability, the 5,000-unit target,
+site rankings and bridge routing are unchanged.
+
+Invalid inputs show an explicit error and retain **LAST VALID RESULTS**;
+download/configuration errors provide retry. Tests cover analytic default
+solutions, zero/negative shifts, comparative statics and all 128 combinations
+of parameter-range endpoints, checking all four equations for every result.
+
+### Optimal FAR model
+
+Market also includes **Optimal FAR**, an original interactive schematic of
+housing price/average cost and residual land value, not a reproduction of the
+supplied textbook image. It uses no observed data or calibration from other
+Market views. Explicit teaching defaults and limits are in
+[`assets/market/far.json`](assets/market/far.json).
+
+For gross residential FAR `F`, housing price per gross residential square foot
+is `P = alpha - beta*F`; average non-land development cost per gross residential
+square foot is `C = mu + gamma*F`. Both use **one arbitrary monetary unit, not
+dollars or independently indexed scales**. Land residual per lot square foot
+is `L = F*(P-C)`. Default `alpha=150`, `beta=15`, `mu=50`, `gamma=10` gives:
+
+- Unconstrained residual-maximizing `F*=2`, housing price 120, average cost 70,
+  land residual 100.
+- Price/cost crossing `F0=4`, with zero land residual, **not** the optimum.
+- Hypothetical ceiling 4, so chosen FAR remains 2 rather than building to 4.
+
+The model maximizes the strictly concave quadratic over `0 <= F <= ceiling`,
+allowing no new building with zero development residual. Thus
+`F* = max(0, (alpha-mu)/(2*(beta+gamma)))`, capped by the hypothetical ceiling.
+For nonpositive intercept spread, no positive development residual exists;
+existing-use land value is excluded, **not asserted to be zero**. A zero
+ceiling prohibits new floor area.
+
+The upper cost curve is **average cost**, not marginal cost: an interior optimum
+satisfies `P + F*P' = C + F*C'`, generally not `P=C`. The chart preserves negative
+curve extrapolations, with aligned FAR axes, optimum/cap/crossing guides and an
+accessible marker-value table. Defaults, invalid-input handling, reset and
+load/retry are independent of the four-quadrant model and monthly-series viewer.
+All 32 parameter-boundary combinations are checked against independent grid
+search, plus first-order identities and no-development/binding-cap cases.
+
+The declining price/density relation is an assumed tradeoff, not an empirical
+law. Cost should include financing/required return for a real residual appraisal;
+here those are not estimated. No lot area, rentable/gross conversion, existing
+building acquisition/demolition, displacement, affordable-unit requirement,
+bridge cost, subsidy, local cost/price, legal zoning or Siting capacity is inferred.
+Raising the ceiling beyond the economic optimum alone adds no residual value.

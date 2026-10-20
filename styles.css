@@ -280,6 +280,69 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .market-table tr.is-flagged { background: var(--warning-bg); }
 .market-table caption { padding: 14px; text-align: left; font-size: 11px; line-height: 1.5; }
 .market-table thead { position: sticky; top: 0; background: white; }
+.market-view-switch { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.market-view-switch button { background: white; color: var(--ink); border: 1px solid var(--line); padding: 8px; font-size: 12px; }
+.market-view-switch button.is-active { border-color: var(--ink); }
+#scenario-fields .section-note { margin-top: 5px; font-size: 10px; }
+#scenario-fields { display: block; }
+#scenario-state, #scenario-summary { font-size: 12px; line-height: 1.6; }
+#scenario-reset { margin-top: 18px; }
+.scenario-focus-label { display: block; margin: 18px 0 8px; font-size: 12px; }
+#scenario-focus { padding: 8px; max-width: 100%; background: white; color: var(--ink); border: 1px solid var(--line); }
+.scenario-legend { display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 11px; margin: 20px 0; }
+.scenario-legend span::before { content: ""; display: inline-block; width: 20px; margin-right: 7px; border-top: 2px solid; vertical-align: middle; }
+.scenario-baseline { color: var(--muted); }
+.scenario-bridge { color: var(--blue); }
+.scenario-redevelopment { color: var(--accent-2); }
+.scenario-combined { color: var(--accent); }
+.scenario-legend .scenario-baseline::before { border-top-style: dashed; }
+.scenario-legend .scenario-bridge::before { border-top-style: dotted; }
+.scenario-legend .scenario-redevelopment::before { border-top-style: dashed; }
+.scenario-chart { border: 1px solid var(--line); overflow-x: auto; }
+.scenario-chart svg { display: block; width: 100%; min-width: 650px; }
+.scenario-axis { stroke: var(--ink); stroke-width: 1; }
+.scenario-label { font-size: 13px; fill: var(--ink); }
+.scenario-tick { font-size: 10px; fill: var(--muted); }
+.scenario-curve { stroke: #999; stroke-width: 1.5; fill: none; }
+.scenario-loop { stroke: currentColor; stroke-width: 1.8; fill: none; opacity: 0.7; }
+.scenario-loop.is-focused { stroke-width: 3; opacity: 1; }
+.scenario-loop.scenario-baseline { stroke-dasharray: 8 5; }
+.scenario-loop.scenario-bridge { stroke-dasharray: 2 4; }
+.scenario-loop.scenario-redevelopment { stroke-dasharray: 9 4 2 4; }
+.scenario-dot { fill: currentColor; }
+.scenario-table-scroll { overflow-x: auto; border: 1px solid var(--line); }
+.scenario-table { min-width: 700px; }
+.scenario-table caption { text-align: left; font-size: 11px; padding: 12px; line-height: 1.5; color: var(--ink); }
+.scenario-table th[scope="row"] { text-align: left; font-weight: 500; }
+.scenario-method { margin-top: 24px; line-height: 1.6; }
+.scenario-method li { margin-bottom: 10px; }
+#far-fields { display: block; }
+#far-fields .section-note { margin-top: 5px; font-size: 10px; }
+#far-reset { margin-top: 18px; }
+#far-state, #far-summary { font-size: 12px; line-height: 1.6; }
+.far-legend { display: flex; flex-wrap: wrap; gap: 10px 20px; font-size: 11px; margin: 20px 0; }
+.far-legend span::before { content: ""; display: inline-block; width: 20px; border-top: 2px solid; margin-right: 7px; vertical-align: middle; }
+.far-price, .far-optimum { color: var(--blue); }
+.far-cost, .far-cap { color: var(--accent); }
+.far-land, .far-chosen { color: var(--accent-2); }
+.far-crossing { color: var(--muted); }
+.far-legend .far-optimum::before { border-top-style: dashed; }
+.far-legend .far-cap::before { border-top-style: dotted; }
+.far-legend .far-crossing::before { border-top-style: dashed; }
+.far-chart { overflow-x: auto; border: 1px solid var(--line); }
+.far-chart svg { display: block; width: 100%; min-width: 640px; }
+.far-line { stroke: currentColor; fill: none; stroke-width: 2.5; }
+.far-guide { stroke: currentColor; stroke-width: 1.5; }
+.far-guide.far-optimum { stroke-dasharray: 8 5; }
+.far-guide.far-cap { stroke-dasharray: 2 5; }
+.far-guide.far-crossing { stroke-dasharray: 8 4 2 4; }
+.far-dot { fill: currentColor; stroke: white; stroke-width: 1; }
+.far-tick { font-size: 11px; fill: var(--muted); }
+.far-label { font-size: 12px; fill: var(--ink); }
+.far-table-scroll { overflow-x: auto; border: 1px solid var(--line); }
+.far-table { min-width: 600px; }
+.far-table caption { text-align: left; padding: 12px; font-size: 11px; line-height: 1.5; }
+.far-table th[scope="row"] { text-align: left; font-weight: 500; }
 @media (max-width: 850px) {
   body:has(.workspace.is-market) { overflow-y: auto; }
   .workspace.is-market { display: grid; grid-template-columns: minmax(0, 1fr); height: auto; min-height: calc(100% - 110px); }
