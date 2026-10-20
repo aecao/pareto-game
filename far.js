@@ -9,6 +9,7 @@ const farState = document.getElementById("far-state");
 
 function drawFar(inputs, result) {
   const host = document.getElementById("far-chart");
+  ModelInteraction.hideDefinition(host.ownerDocument);
   host.replaceChildren();
   const svg = marketSvg("svg", { viewBox: "0 0 900 600", role: "group",
     "aria-label": "Optimal FAR model. Upper plot: housing sale price and average non-land development cost per gross housing square foot. Lower plot: residual land value per lot square foot. Unconstrained maximum, hypothetical ceiling and chosen maximum are marked. Table supplies exact marker values.",

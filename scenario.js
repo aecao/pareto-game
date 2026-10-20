@@ -25,6 +25,7 @@ function setMarketView(view) {
 function drawScenario() {
   const host = document.getElementById("scenario-chart");
   const focus = scenarioResults.find((r) => r.id === scenarioFocus.value);
+  ModelInteraction.hideDefinition(host.ownerDocument);
   host.replaceChildren();
   const svg = marketSvg("svg", { viewBox: "0 0 960 720", role: "group",
     "aria-label": `Four-quadrant long-run model. Rent up, stock right, annual delivery down, value left. Curves: ${focus.label}. Four scenario equilibrium loops; exact values and short-run comparison in the table.`,
@@ -74,14 +75,18 @@ function drawScenario() {
       marketSvg("title", {}, circle, `${row.label}: rent ${scenarioFormat.format(row.rent * 100)}, value ${scenarioFormat.format(row.price * 100)}, stock ${scenarioFormat.format(row.stock * 100)}, annual delivery ${scenarioFormat.format(row.flow * 100)}`);
     }
   }
-  for (const [x, y, label] of [
-    [480, 30, ["Rent $"]], [480, 686, ["Construction", "(sq. ft.)"]],
-    [110, 340, ["Price $"]], [835, 340, ["Stock (sq. ft.)"]],
-    [235, 45, ["Asset Market:", "Valuation"]], [720, 45, ["Property Market:", "Rent Determination"]],
-    [235, 660, ["Asset Market:", "Construction"]], [720, 660, ["Property Market:", "Stock Adjustment"]],
+  for (const [x, y, label, definition] of [
+    [480, 30, ["Rent $"], "rent"], [480, 686, ["Construction", "(sq. ft.)"], "construction"],
+    [110, 340, ["Price $"], "price"], [835, 340, ["Stock (sq. ft.)"], "stock"],
+    [235, 45, ["Asset Market:", "Valuation"], "valuation"],
+    [720, 45, ["Property Market:", "Rent Determination"], "rentDetermination"],
+    [235, 660, ["Asset Market:", "Construction"], "constructionMarket"],
+    [720, 660, ["Property Market:", "Stock Adjustment"], "stockAdjustment"],
   ]) {
-    const text = marketSvg("text", { x, y, "text-anchor": "middle", class: "scenario-label" }, svg);
+    const text = marketSvg("text", { x, y, "text-anchor": "middle", class: "scenario-label model-term",
+      tabindex: 0, role: "group", "aria-label": label.join(" ") }, svg);
     label.forEach((line, index) => marketSvg("tspan", { x, dy: index === 0 ? 0 : 17 }, text, line));
+    ModelInteraction.bindDefinition(text, definition);
   }
   const inputs = { ...scenarioInputs };
   const { demand, extra } = ScenarioModel.factors(inputs, focus);

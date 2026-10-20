@@ -347,7 +347,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .model-handle[aria-orientation="horizontal"] { cursor: ew-resize; }
 .model-handle-hit { fill: white; fill-opacity: 0.85; stroke: var(--ink); stroke-width: 1; }
 .model-handle-dot { fill: var(--ink); }
-.model-handle text { font-size: 13px; fill: var(--ink); stroke: white; stroke-width: 3; paint-order: stroke; pointer-events: none; }
+.model-handle text { font-size: 13px; fill: var(--ink); stroke: white; stroke-width: 3; paint-order: stroke; pointer-events: auto; }
+.model-term, .model-handle text { cursor: help; }
+.model-term:focus { outline: 2px solid var(--blue); outline-offset: 4px; }
+.model-definition { position: fixed; z-index: 10000; box-sizing: border-box; width: 330px; max-width: calc(100vw - 16px); padding: 14px 16px; background: var(--ink); color: white; border: 1px solid white; box-shadow: 0 4px 16px #0003; font-size: 13px; line-height: 1.6; }
 .model-handle:hover .model-handle-hit, .model-handle:focus .model-handle-hit { stroke: var(--blue); stroke-width: 3; }
 .model-handle:focus { outline: none; }
 @media (min-width: 851px) {

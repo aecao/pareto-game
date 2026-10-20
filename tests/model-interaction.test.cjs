@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { boundedValue, bindHandle, dragGeometry } = require("../model-interaction.js");
+const { boundedValue, bindHandle, dragGeometry, bindDefinition, hideDefinition, definitions } = require("../model-interaction.js");
 const configs = [require("../assets/market/far.json"), require("../assets/market/scenario.json")];
 
 test("diagram gestures clamp and snap every parameter to its declared range and precision", () => {
@@ -130,4 +130,90 @@ test("grabbing the edge of a handle preserves its offset and unrelated pointers 
   assert.equal(f.input.value, "5");
   f.send(f.host, "pointermove", { ...f.pointer, clientY: 8 });
   assert.equal(f.input.value, "6");
+});
+
+test("every diagram parameter, quadrant and axis has a plain-language definition", () => {
+  const keys = ["rent", "price", "stock", "construction", "valuation",
+    "rentDetermination", "constructionMarket", "stockAdjustment",
+    ...configs.flatMap((config) => config.parameters.map((p) => p.id))];
+  assert.equal(keys.length, 20);
+  assert.deepEqual(Object.keys(definitions).sort(), keys.sort());
+  for (const key of keys) assert.ok(definitions[key].length > 80, key);
+  assert.match(definitions.capRateFactor, /1 does not mean a 1% cap rate/);
+  assert.match(definitions.redevelopmentFlowPercent, /not 40% of all existing housing/);
+  assert.match(definitions.farCap, /hypothetical ceiling, not verified zoning/);
+});
+
+function tooltipFixture(key = "valuation") {
+  const doc = new EventTarget();
+  doc.documentElement = { clientWidth: 390 };
+  doc.defaultView = new EventTarget();
+  doc.defaultView.innerHeight = 700;
+  class Element extends EventTarget {
+    constructor() {
+      super();
+      this.ownerDocument = doc;
+      this.attributes = {};
+      this.children = [];
+      this.style = {};
+      this.isConnected = true;
+      this.rect = { left: 350, top: 620, bottom: 650, width: 40, height: 30 };
+    }
+    setAttribute(key, value) { this.attributes[key] = value; }
+    getAttribute(key) { return this.attributes[key] ?? null; }
+    append(child) { this.children.push(child); }
+    closest() { return null; }
+    contains(target) { return target === this || this.children.includes(target); }
+    getBoundingClientRect() { return this.rect; }
+  }
+  doc.createElementNS = () => new Element();
+  doc.createElement = () => {
+    const element = new Element();
+    element.rect = { width: 330, height: 180 };
+    return element;
+  };
+  doc.body = new Element();
+  const target = new Element();
+  target.setAttribute("aria-describedby", "existing-help");
+  bindDefinition(target, key);
+  const tooltip = doc.body.children[0];
+  return { doc, target, tooltip, send: (node, type) => node.dispatchEvent(new Event(type)) };
+}
+
+test("hover and focus show definitions within viewport, retain existing descriptions and Escape dismisses", () => {
+  const f = tooltipFixture();
+  assert.equal(f.tooltip.hidden, true);
+  assert.equal(f.tooltip.attributes.role, "tooltip");
+  assert.equal(f.target.attributes["aria-describedby"], "existing-help model-definition-valuation");
+  assert.equal(f.target.children[0].textContent, definitions.valuation);
+  f.send(f.target, "pointerenter");
+  assert.equal(f.tooltip.hidden, false);
+  assert.equal(f.tooltip.textContent, definitions.valuation);
+  assert.equal(f.tooltip.style.left, "52px");
+  assert.equal(f.tooltip.style.top, "430px");
+  const escape = new Event("keydown");
+  escape.key = "Escape";
+  f.doc.dispatchEvent(escape);
+  assert.equal(f.tooltip.hidden, true);
+  f.send(f.target, "focus");
+  assert.equal(f.tooltip.hidden, false);
+  f.send(f.target, "blur");
+  assert.equal(f.tooltip.hidden, true);
+});
+
+test("definitions follow scrolling, hide when disconnected and do not accumulate overlay elements", () => {
+  const f = tooltipFixture("priceSlope");
+  bindDefinition(f.target, "costSlope");
+  assert.equal(f.doc.body.children.length, 1);
+  f.send(f.target, "pointerenter");
+  assert.equal(f.tooltip.textContent, definitions.costSlope);
+  f.target.rect.top = 40;
+  f.target.rect.bottom = 70;
+  f.send(f.doc, "scroll");
+  assert.equal(f.tooltip.style.top, "80px");
+  f.target.isConnected = false;
+  f.send(f.doc, "scroll");
+  assert.equal(f.tooltip.hidden, true);
+  hideDefinition(f.doc);
+  assert.throws(() => bindDefinition(f.target, "missing"), /Unknown diagram definition/);
 });

@@ -343,6 +343,15 @@ interventions; equilibrium markers are outputs, not free-moving inputs.
 The aligned FAR plots use a compact, viewport-height-limited desktop layout;
 small screens retain contained horizontal scrolling.
 
+Hover over four-quadrant axis/quadrant labels or either model's handle labels
+to read a plain-language definition, with examples and illustrative-unit
+caveats. Definitions also appear on keyboard focus; static diagram labels are
+tab stops. The popover stays open while hovered and Escape dismisses it.
+Definitions are available to assistive technology independently of the visible
+popover. Scrolling repositions the popover or hides it when its label leaves
+the viewport. Dragging, switching views or redrawing clears stale popovers
+without changing assumptions.
+
 For gross residential FAR `F`, housing price per gross residential square foot
 is `P = alpha - beta*F`; average non-land development cost per gross residential
 square foot is `C = mu + gamma*F`. Both use **one arbitrary monetary unit, not
