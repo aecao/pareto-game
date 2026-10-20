@@ -22,18 +22,20 @@
       <nav class="mode-switch" aria-label="Study mode">
         <button type="button" data-mode="exploration" aria-pressed="true" class="is-active">Explore</button>
         <button type="button" data-mode="siting" aria-pressed="false">Siting</button>
+        <button type="button" data-mode="connectivity" aria-pressed="false">Connectivity</button>
+        <button type="button" data-mode="market" aria-pressed="false">Market</button>
       </nav>
     </header>
 
     <main class="workspace">
-      <aside class="sidebar" aria-label="Map information">
+      <aside class="sidebar" aria-label="Study controls">
         <div class="sidebar-heading exploration-only">
           <span class="eyebrow">STUDY AREA</span>
           <h1>Roosevelt<br />Island</h1>
           <p class="location-line"><span class="location-pin" aria-hidden="true"></span> New York City, New York</p>
         </div>
 
-        <section class="panel-section">
+        <section class="panel-section map-only">
           <div class="section-heading">
             <span class="eyebrow">MAP STYLE</span>
             <span class="section-index">01</span>
@@ -106,13 +108,71 @@
           </details>
         </section>
 
+        <section class="connectivity-only connectivity-parameters" hidden aria-labelledby="connectivity-heading">
+          <span class="eyebrow">QUEENS / WALKING PROTOTYPE</span>
+          <h1 id="connectivity-heading">Connectivity</h1>
+          <p class="section-note">Origin: Q00313_4003130001, the two-lot assemblage at Costco Esplanade. Compare existing routes with a hypothetical Roosevelt Island bridge.</p>
+          <fieldset id="connectivity-fields" disabled>
+            <legend>Walking scenario</legend>
+            <label for="connectivity-budget">Travel-time budget</label>
+            <select id="connectivity-budget"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option></select>
+            <label for="connectivity-scenario">Map comparison</label>
+            <select id="connectivity-scenario"><option value="both">Baseline + bridge</option><option value="baseline">Baseline only</option><option value="bridge">With bridge only</option></select>
+            <label for="connectivity-route">Example route <span>Computed within 45 minutes</span></label>
+            <select id="connectivity-route"><option value="">None</option></select>
+          </fieldset>
+          <p id="connectivity-state" role="status" aria-live="polite">Select Connectivity to load walking results.</p>
+          <p id="connectivity-error" class="siting-error" role="alert" hidden></p>
+          <button id="connectivity-retry" type="button" class="secondary-button" hidden>Retry loading data</button>
+          <div class="connectivity-legend">
+            <p><span class="connectivity-baseline"></span> Baseline reachable streets</p>
+            <p><span class="connectivity-bridge"></span> Bridge-scenario reachable streets</p>
+            <p><span class="connectivity-link"></span> Hypothetical bridge / assumed access</p>
+          </div>
+          <details class="method-note">
+            <summary>Method &amp; limitations</summary>
+            <p>Precomputed walking results, not live routing. Constant 3 mph; no slope, crossing, stairs or elevator delay. The 554-foot straight bridge and access links are provisional, not engineered or legally approved.</p>
+            <p>Source node IDs and endpoint levels define connectivity. Shorelines, boundary lines, vehicle-only roads and unbuilt streets are excluded. Sidewalks, crossings, barriers and access hours remain incomplete; this is not a pedestrian navigation service or step-free analysis.</p>
+            <p>Lines show reachable street intervals, not all reachable land. Node counts are network diagnostics, not population or jobs. Blank travel times mean not reached within 45 minutes.</p>
+            <p>Roosevelt Island internal routing is provisional. Queens travel times need not improve when a bridge is added. No cycling, transit, vehicle, rent or property-value effects are modeled. Siting rankings are unchanged.</p>
+            <a href="assets/connectivity/walking.json" download>Download walking snapshot (JSON)</a>
+          </details>
+        </section>
+
+        <section class="market-only market-parameters" hidden aria-labelledby="market-heading">
+          <span class="eyebrow">PUBLISHED MONTHLY SERIES</span>
+          <h1 id="market-heading">Market</h1>
+          <p class="section-note">Explore market context, not parcel valuations or a fitted rent model.</p>
+          <fieldset id="market-fields" disabled>
+            <legend>Series selection</legend>
+            <label for="market-metric">Metric</label>
+            <select id="market-metric"></select>
+            <label for="market-geography">Published geography</label>
+            <select id="market-geography"></select>
+            <label for="market-start">From month</label>
+            <input id="market-start" type="month" required />
+            <label for="market-end">Through month</label>
+            <input id="market-end" type="month" required />
+          </fieldset>
+          <p id="market-state" role="status" aria-live="polite">Select Market to load monthly data.</p>
+          <p id="market-error" class="siting-error" role="alert" hidden></p>
+          <button id="market-retry" type="button" class="secondary-button" hidden>Retry loading data</button>
+          <details class="method-note">
+            <summary>Source &amp; limitations</summary>
+            <p>StreetEasy aggregate series, through September 2026. Native source values are retained: unit metadata remains unverified. No currency, percent, per-square-foot or index-base conversion is applied. Shares remain fractions.</p>
+            <p>Missing months stay missing; lines break at gaps. Orange points flag suspect source values, including six negative days-on-market cells. Nothing is corrected, dropped or imputed.</p>
+            <p>Geographies are publisher labels, not verified boundaries, NTAs or community districts. Index series cover only four boroughs; other series include city, borough and neighborhood labels. No neighborhood-to-lot join is implied.</p>
+            <p>These aggregates do not establish achieved rents, unit-level prices, an affordable/market-rate mix or a causal bridge premium. Historical release dates are unverified; these are not prediction-safe features.</p>
+            <a href="assets/market/monthly.json" download>Download all series (JSON)</a>
+          </details>
+        </section>
+
         <div class="sidebar-footer exploration-only">
           <span class="footer-rule"></span>
           <span class="eyebrow">A PLACE-BASED IMPACT STUDY</span>
         </div>
       </aside>
-
-      <section class="map-shell" aria-label="Interactive map of Roosevelt Island">
+      <section class="map-shell map-only" aria-label="Interactive map of Roosevelt Island">
         <div id="map" role="application" aria-label="Map. Drag to pan and use the controls to zoom."></div>
 
         <div class="map-title" aria-hidden="true">
@@ -162,11 +222,52 @@
           <p>Select a site on the map or in the list.</p>
         </section>
       </aside>
+      <aside class="connectivity-only connectivity-results" hidden aria-label="Connectivity results">
+        <div class="results-heading">
+          <span class="eyebrow">BASELINE / HYPOTHETICAL BRIDGE</span>
+          <h2>Walking access</h2>
+          <p id="connectivity-summary" role="status" aria-live="polite">Waiting for walking data.</p>
+          <p class="siting-warning">Hypothetical landing and approach geometry. Connectivity does not establish feasibility.</p>
+          <p id="connectivity-provenance" class="section-note"></p>
+        </div>
+        <section class="siting-detail">
+          <h3>Reachability at selected budget</h3>
+          <dl id="connectivity-metrics" class="siting-metrics"></dl>
+          <p class="section-note">Queens counts are unchanged in this snapshot. The new bridge improves island access, not Queens-to-Queens trips from this origin.</p>
+        </section>
+        <div class="connectivity-table">
+          <table class="ranking-table">
+            <caption>Example walking times in minutes. Select a destination to show both routes; route times use the 45-minute maximum, independently of the map budget.</caption>
+            <thead><tr><th scope="col">Destination</th><th scope="col">Baseline</th><th scope="col">Bridge</th></tr></thead>
+            <tbody id="connectivity-destinations"></tbody>
+          </table>
+        </div>
+      </aside>
+      <section class="market-only market-results" hidden aria-label="Market series results">
+        <span class="eyebrow">MARKET CONTEXT / NO SPATIAL CROSSWALK</span>
+        <h2 id="market-title">Monthly market data</h2>
+        <p id="market-description" class="section-note"></p>
+        <p id="market-summary" role="status" aria-live="polite">Waiting for monthly data.</p>
+        <div id="market-chart" class="market-chart" aria-label="Monthly series chart"></div>
+        <p class="section-note">Native source values. Gaps = missing; orange points = flagged source values. Hover over a point for its month and value; the table provides the same data.</p>
+        <div class="market-table-scroll" tabindex="0" role="region" aria-label="Scrollable monthly market values">
+          <table class="ranking-table market-table">
+            <caption id="market-caption">Selected monthly source values, newest first. Display precision up to six decimal places; full precision in JSON.</caption>
+            <thead><tr><th scope="col">Month</th><th scope="col">Native value</th><th scope="col">Source status</th></tr></thead>
+            <tbody id="market-values"></tbody>
+          </table>
+        </div>
+        <p id="market-provenance" class="section-note"></p>
+      </section>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
     <script src="siting.js"></script>
+    <script src="connectivity-model.js"></script>
+    <script src="connectivity.js"></script>
+    <script src="market-model.js"></script>
+    <script src="market.js"></script>
   </body>
 </html>

@@ -271,18 +271,29 @@ function fitSitingMap() {
 }
 
 function setStudyMode(mode) {
+  if (!["exploration", "siting", "connectivity", "market"].includes(mode)) throw new Error("Unknown study mode.");
   document.body.dataset.mode = mode;
   const isSiting = mode === "siting";
+  const isConnectivity = mode === "connectivity";
+  const isMarket = mode === "market";
   document.querySelector(".workspace").classList.toggle("is-siting", isSiting);
+  document.querySelector(".workspace").classList.toggle("is-connectivity", isConnectivity);
+  document.querySelector(".workspace").classList.toggle("is-market", isMarket);
   document.querySelectorAll("[data-mode]").forEach((button) => {
     const active = button.dataset.mode === mode;
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-pressed", String(active));
   });
   document.querySelectorAll(".siting-only").forEach((element) => { element.hidden = !isSiting; });
-  document.querySelectorAll(".exploration-only").forEach((element) => { element.hidden = isSiting; });
+  document.querySelectorAll(".connectivity-only").forEach((element) => { element.hidden = !isConnectivity; });
+  document.querySelectorAll(".market-only").forEach((element) => { element.hidden = !isMarket; });
+  document.querySelectorAll(".map-only").forEach((element) => { element.hidden = isMarket; });
+  document.querySelectorAll(".exploration-only").forEach((element) => { element.hidden = mode !== "exploration"; });
+  map.closePopup();
+  map.removeLayer(sitingGroup);
+  map.removeLayer(connectivityGroup);
+  map.removeLayer(buildingLayer);
   if (isSiting) {
-    map.removeLayer(buildingLayer);
     if (sitingData) {
       sitingGroup.addTo(map);
       fitSitingMap();
@@ -290,8 +301,17 @@ function setStudyMode(mode) {
       map.invalidateSize();
       loadSiting();
     }
+  } else if (isConnectivity) {
+    if (connectivityData) {
+      connectivityGroup.addTo(map);
+      fitConnectivityMap();
+    } else {
+      map.invalidateSize();
+      loadConnectivity();
+    }
+  } else if (isMarket) {
+    loadMarket();
   } else {
-    map.removeLayer(sitingGroup);
     buildingLayer.addTo(map);
     map.setMaxBounds(studyBounds);
     map.setMinZoom(13);

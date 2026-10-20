@@ -29,11 +29,11 @@
 * { box-sizing: border-box; }
 html, body { width: 100%; height: 100%; margin: 0; }
 body { min-width: 320px; overflow: hidden; }
-button, input { font: inherit; }
+button, input, select { font: inherit; }
 button { cursor: pointer; }
 a { color: inherit; text-underline-offset: 3px; }
 [hidden] { display: none !important; }
-button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible {
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visible {
   outline: 2px solid var(--blue);
   outline-offset: 3px;
 }
@@ -219,4 +219,85 @@ button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visibl
   .siting-parameters legend { margin-bottom: 12px; }
   .siting-parameters label { margin: 0; }
   .siting-parameters h2, #siting-weight-total, #siting-reset { grid-column: 1 / -1; }
+}
+
+.workspace.is-connectivity { grid-template-columns: 278px minmax(0, 1fr) 340px; }
+.connectivity-parameters { padding: 24px; }
+.connectivity-parameters h1 { font-size: 30px; margin: 10px 0; overflow-wrap: anywhere; }
+.connectivity-parameters fieldset { border: 0; margin: 20px 0 0; padding: 0; min-width: 0; }
+.connectivity-parameters legend { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+.connectivity-parameters label { display: block; font-size: 12px; margin: 14px 0 7px; }
+.connectivity-parameters label span { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+.connectivity-parameters select { width: 100%; min-width: 0; padding: 9px 5px; background: white; color: var(--ink); border: 1px solid #8b8987; border-radius: 0; font-size: 12px; }
+#connectivity-state { font-size: 12px; line-height: 1.5; }
+.connectivity-legend { font-size: 11px; line-height: 1.5; }
+.connectivity-legend span { display: inline-block; width: 18px; border-top: 3px solid; margin-right: 6px; }
+.connectivity-baseline { color: var(--map-ranked); }
+.connectivity-bridge { color: var(--map-top); }
+.connectivity-link { color: var(--map-building); border-top-style: dashed !important; }
+.connectivity-results { background: white; border-left: 1px solid var(--line); min-height: 0; overflow-y: auto; }
+#connectivity-summary { font-size: 14px; line-height: 1.5; }
+.connectivity-table { overflow-x: auto; }
+.connectivity-table .site-select[aria-pressed="true"] { color: var(--blue); }
+.is-connectivity .map-title { display: none; }
+@media (max-width: 1100px) and (min-width: 851px) {
+  .workspace.is-connectivity { grid-template-columns: 240px minmax(200px, 1fr) 280px; }
+  .connectivity-parameters { padding: 20px; }
+}
+@media (max-width: 850px) {
+  body:has(.workspace.is-connectivity) { overflow-y: auto; }
+  .workspace.is-connectivity { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); height: auto; min-height: calc(100% - 100px); }
+  .is-connectivity .sidebar { position: static; width: auto; max-height: none; grid-column: 1; grid-row: 2; margin: 0; }
+  .is-connectivity .map-shell { grid-column: 1 / -1; grid-row: 1; height: 55vh; min-height: 300px; }
+  .connectivity-results { grid-column: 2; grid-row: 2; overflow: visible; }
+  .is-connectivity .map-controls { top: 16px; bottom: auto; }
+}
+@media (max-width: 550px) {
+  .workspace.is-connectivity { display: flex; flex-direction: column; min-height: calc(100% - 110px); }
+  .is-connectivity .map-shell { flex: none; height: 48vh; min-height: 280px; order: 0; }
+  .is-connectivity .sidebar { order: 1; overflow: visible; }
+  .connectivity-results { order: 2; }
+  .connectivity-parameters { padding: 20px; }
+}
+
+.market-parameters { padding: 24px; }
+.market-parameters h1 { font-size: 30px; margin: 10px 0; }
+.market-parameters fieldset { border: 0; margin: 20px 0 0; padding: 0; min-width: 0; }
+.market-parameters legend { font-size: 14px; font-weight: 700; }
+.market-parameters label { display: block; margin: 16px 0 7px; font-size: 12px; }
+.market-parameters select, .market-parameters input { width: 100%; min-width: 0; padding: 9px 5px; border: 1px solid #8b8987; background: white; color: var(--ink); border-radius: 0; font-size: 12px; }
+#market-state, #market-summary { font-size: 12px; line-height: 1.6; }
+.market-results { min-width: 0; min-height: 0; overflow-y: auto; padding: 30px; }
+.market-results h2 { margin: 12px 0; font-size: clamp(22px, 2.5vw, 32px); overflow-wrap: anywhere; }
+.market-chart { margin-top: 24px; border: 1px solid var(--line); min-height: 120px; }
+.market-chart > p { padding: 20px; font-size: 14px; }
+.market-chart svg { display: block; width: 100%; height: auto; }
+.market-chart text { font-size: 13px; fill: var(--muted); }
+.market-grid { stroke: var(--line); }
+.market-line { fill: none; stroke: var(--blue); stroke-width: 2; }
+.market-point { fill: var(--blue); }
+.market-point.is-flagged { fill: var(--accent); stroke: white; stroke-width: 1; }
+.market-table-scroll { max-height: 360px; overflow: auto; margin-top: 24px; border: 1px solid var(--line); }
+.market-table th[scope="row"] { font-weight: 400; text-align: left; }
+.market-table tr.is-flagged { background: var(--warning-bg); }
+.market-table caption { padding: 14px; text-align: left; font-size: 11px; line-height: 1.5; }
+.market-table thead { position: sticky; top: 0; background: white; }
+@media (max-width: 850px) {
+  body:has(.workspace.is-market) { overflow-y: auto; }
+  .workspace.is-market { display: grid; grid-template-columns: minmax(0, 1fr); height: auto; min-height: calc(100% - 110px); }
+  .is-market .sidebar { position: static; width: auto; max-height: none; overflow: visible; margin: 0; border: 0; border-bottom: 1px solid var(--line); }
+  .market-parameters fieldset { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 16px; }
+  .market-parameters label { margin: 8px 0; align-self: center; }
+  .market-results { overflow: visible; padding: 24px; }
+}
+@media (max-width: 550px) {
+  .mode-switch { gap: 4px; }
+  .mode-switch button { font-size: 11px; padding: 5px 7px; }
+  .market-parameters, .market-results { padding: 20px; }
+  .market-parameters fieldset { display: block; }
+  .market-parameters label { margin-top: 16px; }
+  .market-chart { overflow-x: auto; }
+  .market-chart svg { min-width: 540px; }
+  .market-table { min-width: 0; }
+  .market-table th, .market-table td { padding: 10px 7px; overflow-wrap: anywhere; }
 }

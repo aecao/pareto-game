@@ -195,6 +195,8 @@ document.querySelector('[data-action="zoom-out"]').addEventListener("click", () 
 document.querySelector('[data-action="home"]').addEventListener("click", () => {
   if (document.body.dataset.mode === "siting" && sitingHomeBounds) {
     map.fitBounds(sitingHomeBounds, { padding: [30, 30] });
+  } else if (document.body.dataset.mode === "connectivity" && connectivityData) {
+    fitConnectivityMap();
   } else {
     map.setView(islandCenter, islandZoom, { animate: true });
   }

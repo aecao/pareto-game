@@ -27,8 +27,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Verify Siting model
-        run: node --test tests/siting-model.test.cjs
+      - name: Verify analytical snapshots and models
+        run: node --test tests/*.test.cjs
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload site artifact
