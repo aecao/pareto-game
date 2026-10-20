@@ -13,11 +13,11 @@ const fixture = (id, extra = {}) => ({
   base_far_proxy_gsf: 1000, existing_units_removed: 0, unranked_reason: "", ...extra,
 });
 
-test("all 101 pilot groups reproduce all 80 original ranks and exact-score precision", () => {
+test("all 72 corrected pilot groups reproduce all 61 pipeline ranks and exact-score precision", () => {
   const output = calculate(sites, defaults);
-  assert.equal(output.sites.length, 101);
-  assert.equal(output.ranked, 80);
-  assert.equal(output.unranked, 21);
+  assert.equal(output.sites.length, 72);
+  assert.equal(output.ranked, 61);
+  assert.equal(output.unranked, 11);
   assert.equal(output.targetMet, 0);
   assert.equal(output.requiredGsf, 5000 * 750 / 0.82);
   for (const site of output.sites) {
@@ -79,9 +79,29 @@ test("incomplete and single-lot groups stay visible and unranked under all weigh
   assert.equal(incomplete.shortfall, null);
   assert.equal(incomplete.targetMet, null);
   assert.equal(incomplete.score, null);
-  const singleton = output.sites.find((site) => site.site_id === "Q00082_4000827501");
+  const singleton = output.sites.find((site) => site.site_id === "Q00470_4004700001");
   assert.equal(singleton.rank, null);
   assert.ok(singleton.proxyUnits > 0);
+});
+
+test("corrected waterfront excludes Dutch Kills and its former creek-only site groups", () => {
+  assert.equal(payload.provenance.boundary_revision, "roosevelt_facing_v2");
+  assert.equal(payload.provenance.constituent_lots, 984);
+  assert.match(payload.provenance.shoreline_method, /exclusion BEFORE the 1000-ft buffer/);
+  for (const id of ["Q00291_4002910001", "Q00083_4000830001", "Q00084_4000840001"]) {
+    assert.ok(!sites.some((site) => site.site_id === id), id);
+  }
+  const shoreline = payload.reference.features.find((feature) => feature.properties.name === "facing_shoreline");
+  const corridor = payload.reference.features.find((feature) => feature.properties.name === "candidate_corridor");
+  // The excluded geographic mask surrounds the detached creek, not the East River shore.
+  const inCreekMask = ([x, y]) => x > -73.9403 && x < -73.9383 && y > 40.7423 && y < 40.7434;
+  const visit = (coordinates) => {
+    if (typeof coordinates[0] === "number") {
+      assert.ok(!inCreekMask(coordinates), JSON.stringify(coordinates));
+    } else coordinates.forEach(visit);
+  };
+  visit(shoreline.geometry.coordinates);
+  visit(corridor.geometry.coordinates);
 });
 
 test("net gains can be negative and are not floored at zero", () => {

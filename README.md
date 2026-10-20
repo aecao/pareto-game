@@ -24,8 +24,8 @@ ranking controls can be used together.
 Select **Siting** in the header to explore the Queens waterfront pilot. The
 existing **Explore** view and its building popups remain available.
 
-The pilot contains **101 groups / 1,082 tax lots**: 80 ranked multi-lot
-assemblages and 21 unranked groups (18 singletons and three groups with
+The corrected pilot contains **72 groups / 984 tax lots**: 61 ranked multi-lot
+assemblages and 11 unranked groups (eight singletons and three groups with
 incomplete inputs). All remain visible on the map and in the ranking list.
 Map selection and list selection share a detail panel. Top-ten ranks are
 numbered on the map; park overlap and unresolved zoning conditions remain
@@ -57,7 +57,7 @@ and do not change the source snapshot or Python pipeline outputs.
   replacement, **not unused FAR, verified legal entitlement or buildable yield**.
 - Accommodation = `min(proxy floor area / required floor area, 1)`.
   Fewer removals and fewer lots use inverse min-max normalization within the
-  80 complete multi-lot candidates. Constant components tie at one.
+  61 complete multi-lot candidates. Constant components tie at one.
 - Score = 100 × weighted component sum. Scores are not feasibility percentages.
   Exact-score ties share minimum rank; site ID orders tied rows. Displayed
   scores are rounded but ranks use full precision.
@@ -65,12 +65,20 @@ and do not change the source snapshot or Python pipeline outputs.
   gross target minus existing units removed, not an achieved forecast, net
   affordable-unit gain, or displaced-household count. Unknowns stay unknown;
   singles and incomplete groups never become ranked by changing weights.
-- At defaults, **zero of 80 ranked sites** meet 5,000 units under the proxy.
+- At defaults, **zero of 61 ranked sites** meet 5,000 units under the proxy.
   At a 1,000-unit target with other defaults unchanged, seven meet the proxy
   target. Neither result demonstrates legal/financial/engineering feasibility.
 
 The 1,000-foot shoreline corridor is a speculative screening boundary, not a
-landing or bridge-approach standard. Assemblages are maximal shared-edge groups
+landing or bridge-approach standard. Boundary revision `roosevelt_facing_v2`
+excludes the detached Dutch Kills creek shoreline **before buffering** because
+it does not face Roosevelt Island. This removes 29 creek-only groups, including
+`Q00291_4002910001` and the former #7/#9 groups, rather than just hiding a site
+in the browser. Scores/ranks are regenerated against the corrected cohort.
+The first six ranks are unchanged; the new #7 is `Q00024_4000240001`.
+The previous 101-group snapshot is archived in the companion POSTGIS workspace
+under `outputs/archive/20261020_before_creek_correction/`.
+Assemblages are maximal shared-edge groups
 within tax blocks, not verified legal zoning lots. Capacity, approvals,
 ownership, displacement, affordability delivery and costs remain unresolved.
 This is a **mode-neutral redevelopment screen** shared with no-bridge
@@ -79,7 +87,7 @@ benefits. Retention adds/removes zero units.
 
 ### Data and reproducibility
 
-[`assets/siting/pilot.json`](assets/siting/pilot.json) is a roughly 247 KB static
+[`assets/siting/pilot.json`](assets/siting/pilot.json) is a roughly 203 KB static
 export from the companion POSTGIS project:
 
 - `outputs/pilot_queens_20261020/`: original ranked sites and reference geometry.
@@ -102,7 +110,7 @@ POSTGIS workspace (substitute the app checkout path):
 ```
 
 The exporter refuses overwrites and verifies the source manifests first. The
-validator compares JavaScript against Python for all 101 groups across five
+validator compares JavaScript against Python for all 72 groups across five
 scenarios, including unit targets, unit size/efficiency and weights. Changing
 eligibility, site geometry, source capacity or source policy requires a new
 reviewed pipeline snapshot, not just a browser control.

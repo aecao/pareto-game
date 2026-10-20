@@ -239,7 +239,7 @@ async function loadSiting() {
     setSitingDefaults();
     sitingFields.disabled = false;
     sitingState.textContent = `${data.provenance.sites} groups / ${data.provenance.constituent_lots.toLocaleString("en-US")} lots loaded.`;
-    document.getElementById("siting-provenance").textContent = `Snapshot: ${data.provenance.pilot}. PLUTO ${data.provenance.pluto}; mapped zoning ${data.provenance.mapped_zoning}. WGS84 display; source metrics in square feet.`;
+    document.getElementById("siting-provenance").textContent = `Snapshot: ${data.provenance.pilot}; boundary ${data.provenance.boundary_revision}. Detached Dutch Kills creek shore excluded before buffering. PLUTO ${data.provenance.pluto}; mapped zoning ${data.provenance.mapped_zoning}. WGS84 display; source metrics in square feet.`;
     updateSiting();
     if (document.body.dataset.mode === "siting") {
       sitingGroup.addTo(map);
