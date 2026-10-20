@@ -33,21 +33,21 @@ portfolio-inspired palette: teal baseline, blue scenario and terracotta dashed
 hypothetical/assumed access links.
 
 This is a **fixed, precomputed snapshot**, not live routing, a freely movable
-origin or an editable bridge. The origin is a representative point inside
-Roosevelt Island, connected to the island greenway with an assumed access link.
+origin or an editable bridge. Both scenarios start at the Roosevelt Island
+bridge landing itself, connected to the island greenway with an assumed access link.
 Baseline-only hides the proposed bridge/Queens approach. The baseline can reach
 Queens over the existing Roosevelt Island pedestrian crossing; the bridge
 scenario adds a direct crossing to the provisional Queens landing. No Siting
 scores, capacity assumptions or rankings change.
 
 At the assumed 3 mph, Queens source-node counts at 15/30/45 minutes are
-9/319/1,169 baseline versus 9/345/1,261 with the bridge. Roosevelt Island counts
-are 116/153/153 in both scenarios. At 45 minutes, 295 Queens source-node times
-improve and 92 additional Queens nodes are reached. These are graph diagnostics,
+3/282/1,064 baseline versus 71/621/1,822 with the bridge. Roosevelt Island counts
+are 78/148/153 in both scenarios. At 45 minutes, 465 Queens source-node times
+improve and 758 additional Queens nodes are reached. These are graph diagnostics,
 not jobs or population.
 
-The 554.4-ft straight crossing, 283.2-ft Roosevelt Island origin access and
-landing access are assumptions—not engineered geometry or verified public
+The 554.4-ft straight crossing and 84.7/64.5-ft Queens/island landing access
+are assumptions—not engineered geometry or verified public
 access. LION 26c physical
 pedestrian edges connect by source node ID plus endpoint level; no connections
 are invented at geometric street crossings. Sidewalk/crossing completeness,
@@ -58,7 +58,7 @@ service or step-free analysis. Cycling, transit, vehicle and financial effects
 are not included.
 
 [`assets/connectivity/walking.json`](assets/connectivity/walking.json) is a
-2.15 MB source-checked export from the companion POSTGIS walking pipeline.
+source-checked export from the companion POSTGIS walking pipeline.
 It retains exact saved EPSG:4326 display geometries, source numerical summaries,
 scenario settings and provenance; no simplification or browser
 rerouting is performed. It omits the full citywide routing graph and display-only

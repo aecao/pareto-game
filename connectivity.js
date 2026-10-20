@@ -49,7 +49,7 @@ function renderConnectivity() {
   connectivityLinks.clearLayers();
   L.geoJSON(connectivityData.scenario_links, {
     filter: (f) => scenario !== "baseline"
-      || ["roosevelt_origin:access", "island_landing:access"].includes(f.properties.name),
+      || f.properties.name === "island_landing:access",
     style: { color: mapPalette.building, weight: 4, dashArray: "7 5" },
     onEachFeature(f, layer) {
       layer.bindPopup(connectivityPopup(f.properties.street,
@@ -68,8 +68,8 @@ function renderConnectivity() {
     ["Island nodes: bridge", bridge.island_source_nodes],
   ]) metrics.append(connectivityNode("dt", label), connectivityNode("dd", value.toLocaleString("en-US")));
   document.getElementById("connectivity-summary").textContent =
-    `Origin: Roosevelt Island. Counts show source street nodes reachable within ${budget} minutes.`;
-  connectivityState.textContent = `${budget}-minute reachability / ${scenario === "both" ? "both scenarios" : scenario}. Fixed Roosevelt Island origin; no live routing.`;
+    `Origin: Roosevelt Island bridge landing. Counts show source street nodes reachable within ${budget} minutes.`;
+  connectivityState.textContent = `${budget}-minute reachability / ${scenario === "both" ? "both scenarios" : scenario}. Fixed island-side bridge landing origin; no live routing.`;
 }
 
 async function loadConnectivity() {
@@ -91,6 +91,7 @@ async function loadConnectivity() {
       style: { color: mapPalette.island, weight: 1, fillOpacity: 0.02 },
     }).addTo(connectivityGroup);
     const markers = L.geoJSON(data.markers, {
+      filter: (f) => f.properties.name !== "Provisional Roosevelt Island landing",
       pointToLayer: (_f, latlng) => L.circleMarker(latlng, {
         radius: 5, color: mapPalette.selected, fillColor: "#fff", fillOpacity: 1,
       }),

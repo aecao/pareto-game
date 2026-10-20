@@ -11,7 +11,7 @@
   function validate(data) {
     requireValue(data && data.schema_version === 3, "unsupported schema");
     requireValue(data.settings?.site_id === "Q00313_4003130001", "unexpected comparison site");
-    requireValue(data.settings?.origin_method === "roosevelt_island_representative_point_with_explicit_access_connector",
+    requireValue(data.settings?.origin_method === "roosevelt_island_bridge_landing_with_explicit_access_connector",
       "unexpected origin method");
     requireValue(JSON.stringify(data.settings.thresholds_minutes) === "[15,30,45]", "unexpected budgets");
     requireValue(data.settings.walking_speed_mph === 3, "unexpected speed");
@@ -19,6 +19,7 @@
     requireValue(finite(data.bridge_length_ft) && data.bridge_length_ft > 0, "bridge length");
     requireValue(finite(data.bridge_minutes) && data.bridge_minutes > 0, "bridge time");
     requireValue(data.validation?.origin_is_roosevelt_island === true
+      && data.validation.origin_is_island_bridge_landing === true
       && data.validation.baseline_node_times_not_worsened === true
       && data.validation.existing_island_bridge_in_baseline === true
       && data.validation.hypothetical_bridge_in_scenario === true, "unverified scenario");
@@ -72,9 +73,17 @@
     }
     requireValue(data.scenario_links.features.filter((f) => f.properties.kind === "hypothetical_bridge").length === 1, "bridge count");
     requireValue(data.markers.features.every((f) => typeof f.properties.name === "string"), "marker labels");
-    requireValue(data.markers.features.some((f) =>
-      f.properties.name === "Roosevelt Island origin (assumed internal access)"
-      && f.geometry.type === "Point"), "Roosevelt Island origin marker");
+    const origin = data.markers.features.find((f) =>
+      f.properties.name === "Roosevelt Island bridge landing (origin)");
+    const landing = data.markers.features.find((f) =>
+      f.properties.name === "Provisional Roosevelt Island landing");
+    const bridge = data.scenario_links.features.find((f) => f.properties.kind === "hypothetical_bridge");
+    requireValue(origin?.geometry.type === "Point" && landing?.geometry.type === "Point"
+      && JSON.stringify(origin.geometry.coordinates) === JSON.stringify(landing.geometry.coordinates)
+      && bridge.geometry.type === "LineString"
+      && bridge.geometry.coordinates.some((point) =>
+        JSON.stringify(point) === JSON.stringify(origin.geometry.coordinates)),
+    "origin must be the island-side bridge landing");
     for (const scenario of ["baseline", "bridge"]) {
       for (const budget of [15, 30, 45]) {
         requireValue(data.reachable_streets.features.some((f) => f.properties.scenario === scenario

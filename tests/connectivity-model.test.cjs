@@ -28,10 +28,11 @@ test("every budget/scenario selector returns exact source feature membership", (
 
 test("Roosevelt Island origin yields distinct baseline and bridge reachability", () => {
   assert.equal(data.validation.origin_is_roosevelt_island, true);
+  assert.equal(data.validation.origin_is_island_bridge_landing, true);
   assert.equal(data.validation.existing_island_bridge_in_baseline, true);
   assert.equal(data.validation.hypothetical_bridge_in_scenario, true);
   assert.ok(data.markers.features.some((feature) =>
-    feature.properties.name === "Roosevelt Island origin (assumed internal access)"));
+    feature.properties.name === "Roosevelt Island bridge landing (origin)"));
   assert.ok([15, 30, 45].some((budget) => {
     const rows = data.summary.filter((row) => row.budget_minutes === budget);
     return rows[0].queens_source_nodes !== rows[1].queens_source_nodes
@@ -39,11 +40,30 @@ test("Roosevelt Island origin yields distinct baseline and bridge reachability",
   }));
 });
 
+test("isochrones start at the island bridge endpoint with no interior-origin detour", () => {
+  const origin = data.markers.features.find((f) =>
+    f.properties.name === "Roosevelt Island bridge landing (origin)");
+  const landing = data.markers.features.find((f) =>
+    f.properties.name === "Provisional Roosevelt Island landing");
+  const bridge = data.scenario_links.features.find((f) => f.properties.kind === "hypothetical_bridge");
+  assert.deepEqual(origin.geometry.coordinates, landing.geometry.coordinates);
+  assert.ok(bridge.geometry.coordinates.some((point) =>
+    JSON.stringify(point) === JSON.stringify(origin.geometry.coordinates)));
+  assert.equal(data.scenario_links.features.some((f) => f.properties.name === "roosevelt_origin:access"), false);
+  const baseline = data.summary.find((row) => row.scenario === "baseline" && row.budget_minutes === 15);
+  const scenario = data.summary.find((row) => row.scenario === "bridge" && row.budget_minutes === 15);
+  assert.ok(scenario.queens_source_nodes > baseline.queens_source_nodes);
+});
+
 for (const [name, corrupt] of [
   ["schema", (d) => { d.schema_version = 99; }],
   ["duplicate summary", (d) => { d.summary[0] = d.summary[1]; }],
   ["coordinate", (d) => { d.markers.features[0].geometry.coordinates = [0, 0]; }],
   ["Queens origin", (d) => { d.settings.origin_method = "site_representative_point_with_explicit_access_connector"; }],
+  ["interior island origin", (d) => {
+    d.markers.features.find((f) => f.properties.name === "Roosevelt Island bridge landing (origin)")
+      .geometry.coordinates[0] -= 0.001;
+  }],
   ["example route payload", (d) => { d.example_routes = { type: "FeatureCollection", features: [] }; }],
   ["identical scenarios", (d) => {
     for (const bridge of d.summary.filter((row) => row.scenario === "bridge")) {
