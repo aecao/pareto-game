@@ -343,6 +343,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .far-table { min-width: 600px; }
 .far-table caption { text-align: left; padding: 12px; font-size: 11px; line-height: 1.5; }
 .far-table th[scope="row"] { text-align: left; font-weight: 500; }
+.model-handle { cursor: ns-resize; touch-action: none; }
+.model-handle[aria-orientation="horizontal"] { cursor: ew-resize; }
+.model-handle-hit { fill: white; fill-opacity: 0.85; stroke: var(--ink); stroke-width: 1; }
+.model-handle-dot { fill: var(--ink); }
+.model-handle text { font-size: 13px; fill: var(--ink); stroke: white; stroke-width: 3; paint-order: stroke; pointer-events: none; }
+.model-handle:hover .model-handle-hit, .model-handle:focus .model-handle-hit { stroke: var(--blue); stroke-width: 3; }
+.model-handle:focus { outline: none; }
+@media (min-width: 851px) {
+  .far-legend { margin: 10px 0; gap: 8px 16px; }
+  .far-chart svg { height: clamp(320px, calc(100dvh - 380px), 540px); min-width: 0; }
+  .far-label { font-size: 15px; }
+  .far-tick { font-size: 14px; }
+}
 @media (max-width: 850px) {
   body:has(.workspace.is-market) { overflow-y: auto; }
   .workspace.is-market { display: grid; grid-template-columns: minmax(0, 1fr); height: auto; min-height: calc(100% - 110px); }

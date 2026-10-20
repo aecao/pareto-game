@@ -282,9 +282,11 @@ accessible table provides short-run and long-run results.
 Assumptions and technical input ranges live in
 [`assets/market/scenario.json`](assets/market/scenario.json), each explicitly
 marked `ASSUMPTION`, not an empirical estimate. Default demand/construction
-elasticities are 1, bridge willingness-to-pay shift is +10%, sustained extra
-net delivery is 10% of **reference annual flow**, and cap-rate, cost and loss
-multipliers are 1. Reset restores these illustrative values. No physical
+elasticities are 1, bridge willingness-to-pay shift is +40%, sustained extra
+net delivery is 40% of **reference annual flow**, and cap-rate, cost and loss
+multipliers are 1. These two 40% defaults are deliberately exaggerated for
+visual clarity, not expected local effects; axis values and outputs are not
+artificially magnified. Reset restores these illustrative values. No physical
 units, reference loss percentage, actual cap rate or forecast years are
 specified. Values do not persist across reloads.
 
@@ -330,6 +332,16 @@ housing price/average cost and residual land value, not a reproduction of the
 supplied textbook image. It uses no observed data or calibration from other
 Market views. Explicit teaching defaults and limits are in
 [`assets/market/far.json`](assets/market/far.json).
+
+Both explanatory diagrams have labeled parameter handles for pointer/touch
+dragging and keyboard adjustment. Arrow keys change one configured step,
+Shift+arrow changes ten, Home/End select limits, and Escape restores the
+pre-drag value. Inputs, diagrams and tables update together. Axis scales stay
+fixed during a drag and refit on release. Four-quadrant demand-shift and extra
+delivery handles appear only when the selected scenario includes those
+interventions; equilibrium markers are outputs, not free-moving inputs.
+The aligned FAR plots use a compact, viewport-height-limited desktop layout;
+small screens retain contained horizontal scrolling.
 
 For gross residential FAR `F`, housing price per gross residential square foot
 is `P = alpha - beta*F`; average non-land development cost per gross residential

@@ -16,10 +16,22 @@ test("illustrative defaults validate without mutation and no-intervention refere
 
 test("default equilibria match independent quadratic solutions", () => {
   const results = model.solve(config, defaults);
-  close(results[1].stock, Math.sqrt(1.1));
-  close(results[2].stock, (0.1 + Math.sqrt(0.01 + 4)) / 2);
-  close(results[3].stock, (0.1 + Math.sqrt(0.01 + 4.4)) / 2);
-  for (const r of results) close(r.rent * r.stock, r.bridge ? 1.1 : 1);
+  close(results[1].stock, Math.sqrt(1.4));
+  close(results[2].stock, (0.4 + Math.sqrt(0.16 + 4)) / 2);
+  close(results[3].stock, (0.4 + Math.sqrt(0.16 + 5.6)) / 2);
+  for (const r of results) close(r.rent * r.stock, r.bridge ? 1.4 : 1);
+});
+
+test("exaggerated 40% teaching defaults increase differences without distorting plotted results", () => {
+  assert.equal(defaults.bridgeDemandPercent, 40);
+  assert.equal(defaults.redevelopmentFlowPercent, 40);
+  const larger = model.solve(config, defaults);
+  const smaller = model.solve(config, { ...defaults, bridgeDemandPercent: 10, redevelopmentFlowPercent: 10 });
+  assert.ok(larger[1].rent - 1 > 3 * (smaller[1].rent - 1));
+  assert.ok(1 - larger[2].rent > 3 * (1 - smaller[2].rent));
+  assert.ok(larger[3].stock - 1 > 3 * (smaller[3].stock - 1));
+  close(larger[3].rent, 1);
+  close(larger[3].stock, 1.4);
 });
 
 test("zero intervention assumptions collapse all four scenarios", () => {
@@ -29,7 +41,7 @@ test("zero intervention assumptions collapse all four scenarios", () => {
 
 test("bridge demand raises fixed-stock rent; net delivery moderates long-run rent", () => {
   const [baseline, bridge, redevelopment, combined] = model.solve(config, defaults);
-  close(bridge.shortRunRent, 1.1);
+  close(bridge.shortRunRent, 1.4);
   close(combined.shortRunRent, bridge.shortRunRent);
   close(redevelopment.shortRunRent, baseline.shortRunRent);
   assert.ok(bridge.rent > baseline.rent && bridge.stock > baseline.stock);

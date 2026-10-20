@@ -26,11 +26,12 @@ function drawScenario() {
   const host = document.getElementById("scenario-chart");
   const focus = scenarioResults.find((r) => r.id === scenarioFocus.value);
   host.replaceChildren();
-  const svg = marketSvg("svg", { viewBox: "0 0 960 720", role: "img",
+  const svg = marketSvg("svg", { viewBox: "0 0 960 720", role: "group",
     "aria-label": `Four-quadrant long-run model. Rent up, stock right, annual delivery down, value left. Curves: ${focus.label}. Four scenario equilibrium loops; exact values and short-run comparison in the table.`,
   }, host);
   const cx = 480, cy = 360, extent = 275;
-  const top = Math.max(1.5, ...scenarioResults.flatMap((r) => [r.stock, r.rent, r.price, r.flow])) * 1.18;
+  const top = ModelInteraction.dragGeometry(host)?.top
+    ?? Math.max(1.5, ...scenarioResults.flatMap((r) => [r.stock, r.rent, r.price, r.flow])) * 1.18;
   const scale = extent / top;
   const point = (x, y) => [cx + x * scale, cy - y * scale];
   const polyline = (coords, cls) => marketSvg("polyline", {
@@ -82,6 +83,42 @@ function drawScenario() {
     const text = marketSvg("text", { x, y, "text-anchor": "middle", class: "scenario-label" }, svg);
     label.forEach((line, index) => marketSvg("tspan", { x, dy: index === 0 ? 0 : 17 }, text, line));
   }
+  const inputs = { ...scenarioInputs };
+  const { demand, extra } = ScenarioModel.factors(inputs, focus);
+  const handle = (id, x, y, label, fromPoint, extraOptions = {}) => {
+    const [px, py] = point(x, y);
+    ModelInteraction.bindHandle(svg, {
+      host, parameter: scenarioConfig.parameters.find((p) => p.id === id),
+      input: scenarioForm.elements.namedItem(id), onChange: updateScenario, x: px, y: py, label,
+      geometry: { top }, valueFromPoint: (sx, sy) => fromPoint((sx - cx) / scale, (cy - sy) / scale),
+      ...extraOptions,
+    });
+  };
+  if (focus.bridge) {
+    handle("bridgeDemandPercent", 1, demand, "Demand shift", (_s, rent) => (rent - 1) * 100);
+  }
+  const demandStock = 1.4;
+  const demandRange = scenarioConfig.parameters.find((p) => p.id === "demandElasticity");
+  handle("demandElasticity", demandStock, ScenarioModel.rent(demandStock, inputs, focus),
+    "Demand elasticity", (_s, rent) => rent <= 0 ? demandRange.min : rent >= demand ? demandRange.max
+      : Math.log(demandStock) / Math.log(demand / rent), { labelY: 24 });
+  handle("capRateFactor", -0.7, inputs.capRateFactor * 0.7, "Cap rate",
+    (_price, rent) => rent / 0.7, { labelX: -15 });
+  const costPrice = inputs.costFactor * 0.7 ** (1 / inputs.supplyElasticity);
+  handle("costFactor", -costPrice, -(0.7 + extra), "Delivery cost",
+    (price) => -price / 0.7 ** (1 / inputs.supplyElasticity),
+    { orientation: "horizontal", labelX: -15 });
+  const supplyRange = scenarioConfig.parameters.find((p) => p.id === "supplyElasticity");
+  handle("supplyElasticity", -inputs.costFactor * 0.4,
+    -(0.4 ** inputs.supplyElasticity + extra), "Supply elasticity",
+    (_price, flow) => -flow - extra <= 0 ? supplyRange.max : -flow - extra >= 1 ? supplyRange.min
+      : Math.log(-flow - extra) / Math.log(0.4), { labelX: -15, labelY: 24 });
+  if (focus.redevelopment) {
+    handle("redevelopmentFlowPercent", -inputs.costFactor, -(1 + extra), "Extra delivery",
+      (_price, flow) => (-flow - 1) * 100, { labelX: -15, labelY: 24 });
+  }
+  handle("lossFactor", 0.75, -inputs.lossFactor * 0.75, "Stock loss",
+    (_stock, flow) => -flow / 0.75);
 }
 
 function updateScenario() {
