@@ -38,6 +38,8 @@ lightLayer.addTo(map);
 L.control.scale({ position: "bottomright", metric: true, imperial: false }).addTo(map);
 
 const buildingStatus = document.getElementById("building-state");
+const buildingLayer = L.featureGroup().addTo(map);
+let sitingHomeBounds = null;
 
 function parseCsv(text) {
   const rows = [];
@@ -156,7 +158,7 @@ async function loadBuildings() {
           layer.on("mouseout", () => layer.setStyle({ color: "#a85e2a", fillColor: "#e9ad73", fillOpacity: 0.66, weight: 1.2 }));
         },
       },
-    ).addTo(map);
+    ).addTo(buildingLayer);
 
     buildingStatus.textContent = `${features.length} ON MAP`;
     buildingStatus.classList.add("is-ready");
@@ -186,5 +188,9 @@ document.querySelectorAll("[data-style]").forEach((button) => {
 document.querySelector('[data-action="zoom-in"]').addEventListener("click", () => map.zoomIn());
 document.querySelector('[data-action="zoom-out"]').addEventListener("click", () => map.zoomOut());
 document.querySelector('[data-action="home"]').addEventListener("click", () => {
-  map.setView(islandCenter, islandZoom, { animate: true });
+  if (document.body.dataset.mode === "siting" && sitingHomeBounds) {
+    map.fitBounds(sitingHomeBounds, { padding: [30, 30] });
+  } else {
+    map.setView(islandCenter, islandZoom, { animate: true });
+  }
 });

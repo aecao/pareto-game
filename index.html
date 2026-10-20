@@ -21,12 +21,15 @@
         <span class="eyebrow">PLACE &amp; CHANGE / 01</span>
         <span class="project-title">Roosevelt Island</span>
       </div>
-      <div class="topbar-meta"><span class="status-dot"></span> EXPLORATION MODE</div>
+      <nav class="mode-switch" aria-label="Study mode">
+        <button type="button" data-mode="exploration" aria-pressed="true" class="is-active">Explore</button>
+        <button type="button" data-mode="siting" aria-pressed="false">Siting</button>
+      </nav>
     </header>
 
     <main class="workspace">
       <aside class="sidebar" aria-label="Map information">
-        <div class="sidebar-heading">
+        <div class="sidebar-heading exploration-only">
           <span class="eyebrow">STUDY AREA</span>
           <h1>Roosevelt<br />Island</h1>
           <p class="location-line"><span class="location-pin" aria-hidden="true"></span> New York City, New York</p>
@@ -48,7 +51,7 @@
           <p class="section-note">A quiet context map keeps future place data in focus.</p>
         </section>
 
-        <section class="panel-section layer-section">
+        <section class="panel-section layer-section exploration-only">
           <div class="section-heading">
             <span class="eyebrow">STUDY LAYERS</span>
             <span class="section-index">02</span>
@@ -66,7 +69,45 @@
           <p class="section-note layer-note">Geometry: NYC DoITT · attributes: PLUTO / CSV</p>
         </section>
 
-        <div class="sidebar-footer">
+        <section class="siting-only siting-parameters" hidden aria-labelledby="siting-heading">
+          <span class="eyebrow">QUEENS WATERFRONT / PILOT</span>
+          <h1 id="siting-heading">Siting</h1>
+          <p class="section-note">Adjust the development scenario. Rankings update locally using fixed pilot sites and capacity inputs.</p>
+          <form id="siting-form">
+            <fieldset id="siting-fields" disabled>
+              <legend>Development assumptions</legend>
+              <label for="siting-units">New affordable units <span>Gross new units, not net gain</span></label>
+              <input id="siting-units" name="units" type="number" min="1" step="1" required />
+              <label for="siting-unit-size">Net unit size <span>Square feet per unit</span></label>
+              <input id="siting-unit-size" name="unitSize" type="number" min="0" step="any" required />
+              <label for="siting-efficiency">Net-to-gross efficiency <span>Percent of gross residential floor area</span></label>
+              <input id="siting-efficiency" name="efficiency" type="number" min="0" max="100" step="any" required />
+              <h2>Ranking weights <small>Must total 100%</small></h2>
+              <label for="siting-weight-accommodation">Target accommodation (%)</label>
+              <input id="siting-weight-accommodation" name="accommodation" type="number" min="0" max="100" step="any" required />
+              <label for="siting-weight-removal">Fewer existing units removed (%)</label>
+              <input id="siting-weight-removal" name="removal" type="number" min="0" max="100" step="any" required />
+              <label for="siting-weight-assembly">Fewer lots to assemble (%)</label>
+              <input id="siting-weight-assembly" name="assembly" type="number" min="0" max="100" step="any" required />
+              <p id="siting-weight-total" class="section-note"></p>
+              <button type="button" id="siting-reset" class="secondary-button">Reset assumptions</button>
+            </fieldset>
+          </form>
+          <p id="siting-error" class="siting-error" role="alert" hidden></p>
+          <p id="siting-load-state" role="status">Loading pilot data...</p>
+          <button type="button" id="siting-retry" class="secondary-button" hidden>Retry loading data</button>
+          <details class="method-note">
+            <summary>Method &amp; limitations</summary>
+            <p>Required gross floor area = units × net unit size ÷ efficiency. Replacement capacity proxy = sum of lot area × PLUTO residential FAR, not unused FAR or legal entitlement.</p>
+            <p>Accommodation is capped at 1 for scoring. Removal and assembly use inverse min-max normalization across the 80 complete multi-lot candidates; a constant component ties at 1. Scores are weighted sums × 100, not feasibility percentages. Equal scores share rank.</p>
+            <p>All existing residential units are presumed removed. Occupancy, displacement and existing affordability are unknown. Net gains assume the full target is built, not a forecast. Retention adds/removes zero units.</p>
+            <p>Park conflicts remain visible, not excluded. Zoning, MIH, ownership, approvals, costs and engineering are unresolved. Tax-lot assemblages are not verified legal zoning lots.</p>
+            <p>This is a mode-neutral redevelopment screen, shared with no-bridge redevelopment. No pedestrian/bike, transit or vehicle bridge benefit has been calculated.</p>
+            <a href="assets/siting/pilot.json" download>Download source snapshot (JSON)</a>
+          </details>
+        </section>
+
+        <div class="sidebar-footer exploration-only">
           <span class="footer-rule"></span>
           <span class="eyebrow">A PLACE-BASED IMPACT STUDY</span>
         </div>
@@ -100,9 +141,33 @@
           <span>MANHATTAN <b>·</b> QUEENS</span>
         </div>
       </section>
+      <aside class="siting-only siting-results" hidden aria-label="Siting ranking results">
+        <div class="results-heading">
+          <span class="eyebrow">PROVISIONAL REDEVELOPMENT SCREEN</span>
+          <h2>Site ranking</h2>
+          <p id="siting-summary" role="status" aria-live="polite">Waiting for pilot data.</p>
+          <p id="siting-policy-state" class="section-note"></p>
+          <p class="siting-warning">Unverified base-FAR proxy. A high score is not evidence of feasibility.</p>
+          <p id="siting-area" class="section-note"></p>
+          <div class="siting-legend"><span class="legend-top"></span> Top 10 <span class="legend-ranked"></span> Ranked <span class="legend-unranked"></span> Unranked</div>
+          <p id="siting-provenance" class="section-note"></p>
+        </div>
+        <div class="ranking-scroll">
+          <table class="ranking-table">
+            <caption>All pilot groups. Select a site to inspect its metrics and conflicts.</caption>
+            <thead><tr><th scope="col">Rank / site</th><th scope="col">Score</th><th scope="col">Proxy units</th></tr></thead>
+            <tbody id="siting-ranks"></tbody>
+          </table>
+        </div>
+        <section id="siting-detail" class="siting-detail" aria-label="Selected site details">
+          <p>Select a site on the map or in the list.</p>
+        </section>
+      </aside>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
+    <script src="siting-model.js"></script>
+    <script src="siting.js"></script>
   </body>
 </html>

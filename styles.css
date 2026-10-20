@@ -157,3 +157,82 @@ button { font: inherit; }
   .panel-section { padding-top: 17px; padding-bottom: 16px; }
   .sidebar-footer { padding-top: 12px; padding-bottom: 12px; }
 }
+
+[hidden] { display: none !important; }
+.mode-switch { margin-left: auto; display: flex; gap: 4px; }
+.mode-switch button { border: 1px solid #58615b; color: #cbd2cb; border-radius: 4px; background: transparent; padding: 8px 13px; cursor: pointer; font-size: 12px; }
+.mode-switch button.is-active { color: var(--ink); background: var(--acid); border-color: var(--acid); }
+button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid #497b9e; outline-offset: 2px; }
+.workspace.is-siting { grid-template-columns: 290px minmax(220px, 1fr) 360px; }
+.is-siting .sidebar { overflow-y: auto; min-height: 0; }
+.is-siting .map-title, .is-siting .map-caption { display: none; }
+.siting-parameters { padding: 22px; }
+.siting-parameters h1 { margin: 7px 0; font-size: 28px; font-weight: 500; }
+.siting-parameters .section-note { display: block; }
+.siting-parameters fieldset { border: 0; margin: 20px 0 0; padding: 0; min-width: 0; }
+.siting-parameters legend { font-weight: 600; font-size: 13px; margin-bottom: 12px; }
+.siting-parameters label { display: block; font-size: 11px; margin: 11px 0 5px; }
+.siting-parameters label span { display: block; color: #707971; font-size: 10px; margin-top: 3px; }
+.siting-parameters input { width: 100%; padding: 8px; border: 1px solid #b7c1b6; border-radius: 3px; color: var(--ink); background: #fff; font: inherit; font-size: 13px; }
+.siting-parameters h2 { font-size: 13px; margin: 22px 0 12px; }
+.siting-parameters h2 small { display: block; font-size: 10px; color: #707971; font-weight: 400; margin-top: 4px; }
+.secondary-button { border: 1px solid #b7c1b6; background: #eef2e7; color: var(--ink); padding: 8px 12px; border-radius: 3px; font-size: 11px; cursor: pointer; margin: 12px 0; }
+.method-note { font-size: 11px; line-height: 1.6; margin-top: 18px; }
+.method-note summary, .siting-detail summary { cursor: pointer; font-weight: 600; }
+.method-note a { color: #315f7a; }
+#siting-load-state { font-size: 10px; line-height: 1.5; }
+.siting-error { padding: 10px; border-left: 3px solid #b94c30; color: #8b301c; background: #fff0e9; font-size: 12px; line-height: 1.5; }
+.siting-results { background: var(--paper); border-left: 1px solid #dfe2dc; min-height: 0; overflow-y: auto; }
+.results-heading { padding: 22px 18px 16px; border-bottom: 1px solid var(--line); }
+.results-heading h2 { margin: 8px 0; font-size: 24px; font-weight: 500; }
+#siting-summary { font-size: 13px; line-height: 1.5; }
+.siting-warning { background: #fff0df; color: #7b4822; padding: 9px; font-size: 11px; line-height: 1.5; border-left: 3px solid #c47f3d; }
+.siting-legend { display: flex; align-items: center; gap: 6px; font-size: 10px; margin-top: 12px; }
+.siting-legend span { width: 9px; height: 9px; display: inline-block; margin-left: 5px; }
+.legend-top { background: #bb4d32; }.legend-ranked { background: #357c63; }.legend-unranked { background: #7d8580; }
+.siting-detail { padding: 18px; border-bottom: 1px solid var(--line); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.siting-detail h3 { margin: 7px 0; font-size: 15px; }
+.site-address { color: #68716b; }
+.siting-metrics { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 14px 0 8px; }
+.siting-metrics dt { color: #646e66; }.siting-metrics dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.site-flags { padding-left: 16px; color: #8b4c2a; }.site-flags li { margin: 6px 0; }
+.siting-detail details p { font-family: "IBM Plex Mono", monospace; font-size: 10px; }
+.ranking-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.ranking-scroll { max-height: 38vh; min-height: 180px; overflow-y: auto; border-bottom: 1px solid #bfc8bc; }
+.ranking-table caption { text-align: left; padding: 14px 18px; font-size: 10px; line-height: 1.5; color: #68716b; }
+.ranking-table th { position: sticky; top: 0; text-align: left; padding: 10px 8px; border-bottom: 1px solid #bfc8bc; background: #eef2e7; font-size: 10px; }
+.ranking-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; font-variant-numeric: tabular-nums; }
+.ranking-table td small { display: block; font-size: 9px; color: #747d72; margin-top: 4px; }
+.ranking-table tr.is-selected { background: #e5edcf; }
+.site-select { background: none; border: 0; padding: 0; font-size: 10px; color: #315940; text-align: left; cursor: pointer; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.is-stale .results-heading { background: #fff0e9; }
+.leaflet-tooltip.site-rank-label { border: 1px solid #8d583d; background: #fffdf7; padding: 2px 4px; font: 10px "IBM Plex Mono", monospace; box-shadow: none; color: #633c29; }
+.leaflet-tooltip.site-rank-label::before { display: none; }
+
+@media (max-width: 1100px) and (min-width: 701px) {
+  .workspace.is-siting { grid-template-columns: 250px minmax(200px, 1fr) 300px; }
+  .siting-parameters { padding: 18px; }
+}
+@media (max-width: 850px) {
+  body:has(.workspace.is-siting) { overflow-y: auto; }
+  .workspace.is-siting { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); height: auto; min-height: calc(100% - 66px); }
+  .is-siting .sidebar { position: static; width: auto; grid-column: 1; grid-row: 2; border-radius: 0; margin: 0; }
+  .is-siting .map-shell { grid-column: 1 / -1; grid-row: 1; height: 55vh; min-height: 300px; }
+  .siting-results { grid-column: 2; grid-row: 2; overflow: visible; }
+  .is-siting .map-controls { top: 16px; bottom: auto; }
+  .is-siting .section-note { display: block; }
+}
+@media (max-width: 550px) {
+  .project-name { display: none; }
+  .mode-switch button { font-size: 11px; padding: 7px 10px; }
+  .workspace.is-siting { display: flex; flex-direction: column; }
+  .is-siting .map-shell { flex: none; height: 48vh; min-height: 280px; order: 0; }
+  .is-siting .sidebar { order: 1; overflow: visible; }
+  .siting-results { order: 2; }
+  .is-siting .panel-section { padding: 12px 20px; }
+  .siting-parameters { padding: 18px 20px; }
+  .siting-parameters fieldset { display: grid; grid-template-columns: 1fr 100px; align-items: center; gap: 10px; }
+  .siting-parameters legend { margin-bottom: 10px; }
+  .siting-parameters label { margin: 0; }
+  .siting-parameters h2, #siting-weight-total, #siting-reset { grid-column: 1 / -1; }
+}
