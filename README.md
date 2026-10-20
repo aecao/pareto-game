@@ -2,6 +2,23 @@
 
 A static Roosevelt Island mapping study, designed for GitHub Pages.
 
+## Visual style
+
+The interface follows the visual language of [aecao/portfolio](https://github.com/aecao/portfolio):
+Helvetica Neue / Helvetica / Arial, light body text, bold headings, white panels,
+near-black text (`#15120f`), thin rules and square-edged controls. Navigation uses
+a black outline for the active mode and black/white hover states. The portfolio's
+blue (`#0035ff`) identifies top-ten sites, focus and selection accents; teal
+(`#2a6c68`) marks other ranked sites, and terracotta (`#b8432f`) marks review
+warnings and building footprints. Unranked sites remain gray and dashed.
+
+UI and Leaflet overlay colors share the CSS custom properties in `styles.css`,
+so map polygons and their legend stay consistent. Labels and warnings remain
+explicit; color alone does not establish a site's rank or eligibility.
+The system font stack needs no external font downloads. The analytical
+three-panel workspace remains wider than the portfolio gallery so the map and
+ranking controls can be used together.
+
 ## Siting mode
 
 Select **Siting** in the header to explore the Queens waterfront pilot. The
@@ -101,7 +118,7 @@ python -m http.server 4173
 Then open http://localhost:4173.
 
 Use HTTP rather than opening the HTML as a local file, because the map fetches
-JSON and CSV assets. Leaflet, fonts and basemap tiles retain their existing
+JSON and CSV assets. Leaflet and basemap tiles retain their existing
 external-network dependencies.
 
 ## Tests

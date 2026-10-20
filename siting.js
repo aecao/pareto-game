@@ -46,9 +46,9 @@ function setSitingDefaults() {
 
 function sitingStyle(site) {
   const selected = site.site_id === sitingSelectedId;
-  const color = site.rank === null ? "#7d8580" : site.rank <= 10 ? "#bb4d32" : "#357c63";
+  const color = site.rank === null ? mapPalette.unranked : site.rank <= 10 ? mapPalette.top : mapPalette.ranked;
   return {
-    color: selected ? "#202623" : color, weight: selected ? 3 : 1.3,
+    color: selected ? mapPalette.selected : color, weight: selected ? 3 : 1.3,
     fillColor: color, fillOpacity: selected ? 0.7 : 0.38,
     dashArray: site.rank === null ? "4 3" : null,
   };
@@ -223,11 +223,11 @@ async function loadSiting() {
     L.geoJSON(data.reference, {
       interactive: false,
       style: (feature) => feature.properties.name === "candidate_corridor"
-        ? { color: "#618db2", weight: 1, fillColor: "#a1c6e0", fillOpacity: 0.12 }
-        : { color: "#566d77", weight: 2, fillColor: "#9daaa4", fillOpacity: 0.2 },
+        ? { color: mapPalette.corridor, weight: 1, fillColor: mapPalette.corridor, fillOpacity: 0.06 }
+        : { color: mapPalette.island, weight: 2, fillColor: mapPalette.island, fillOpacity: 0.12 },
     }).addTo(sitingGroup);
     L.geoJSON(data.sites, {
-      style: { color: "#357c63", weight: 1.3 },
+      style: { color: mapPalette.ranked, weight: 1.3 },
       onEachFeature(feature, layer) {
         const id = feature.properties.site_id;
         sitingSiteLayers.set(id, layer);

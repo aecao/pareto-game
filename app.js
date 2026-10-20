@@ -1,5 +1,10 @@
 const islandCenter = [40.7625, -73.9497];
 const islandZoom = 15.2;
+const themeStyles = getComputedStyle(document.documentElement);
+const mapPalette = Object.fromEntries([
+  "top", "ranked", "unranked", "selected", "corridor", "island",
+  "building", "building-fill", "building-hover", "building-hover-fill",
+].map((key) => [key, themeStyles.getPropertyValue(`--map-${key}`).trim()]));
 const studyBounds = L.latLngBounds(
   [40.744, -73.970],
   [40.780, -73.925],
@@ -131,10 +136,10 @@ async function loadBuildings() {
       { type: "FeatureCollection", features: features.map(({ feature }) => feature) },
       {
         style: {
-          color: "#a85e2a",
+          color: mapPalette.building,
           weight: 1.2,
           opacity: 0.95,
-          fillColor: "#e9ad73",
+          fillColor: mapPalette["building-fill"],
           fillOpacity: 0.66,
         },
         onEachFeature(feature, layer) {
@@ -154,8 +159,8 @@ async function loadBuildings() {
             maxWidth: 340,
             className: "building-popup",
           });
-          layer.on("mouseover", () => layer.setStyle({ color: "#70431f", fillColor: "#f1c756", fillOpacity: 0.9, weight: 2 }));
-          layer.on("mouseout", () => layer.setStyle({ color: "#a85e2a", fillColor: "#e9ad73", fillOpacity: 0.66, weight: 1.2 }));
+          layer.on("mouseover", () => layer.setStyle({ color: mapPalette["building-hover"], fillColor: mapPalette["building-hover-fill"], fillOpacity: 0.9, weight: 2 }));
+          layer.on("mouseout", () => layer.setStyle({ color: mapPalette.building, fillColor: mapPalette["building-fill"], fillOpacity: 0.66, weight: 1.2 }));
         },
       },
     ).addTo(buildingLayer);
