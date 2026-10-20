@@ -22,42 +22,45 @@ ranking controls can be used together.
 ## Connectivity mode
 
 Select **Connectivity** for the first walking-only bridge prototype:
-`Q00313_4003130001` (two-lot Queens assemblage at Costco Esplanade) to a provisional
-Roosevelt Island landing. Explore and Siting remain unchanged and available.
+`Q00313_4003130001` (two-lot Queens assemblage at Costco Esplanade) from an
+assumed access point on Roosevelt Island. Explore and Siting remain unchanged
+and available.
 
 Controls select **15/30/45 minutes**, baseline/bridge/both street reachability,
-and example destination routes. Destination table buttons select the same routes.
-The home control restores the Queens-focused view. Styles and legend use the
-existing portfolio-inspired palette: teal baseline, blue scenario and terracotta
-dashed hypothetical/assumed access links.
+and baseline/bridge/both map display. The map opens with the Roosevelt Island
+origin and Queens site in view. Styles and legend use the existing
+portfolio-inspired palette: teal baseline, blue scenario and terracotta dashed
+hypothetical/assumed access links.
 
 This is a **fixed, precomputed snapshot**, not live routing, a freely movable
-origin or an editable bridge. Baseline-only hides the proposed bridge/Queens
-approach; example routes deliberately compare both scenarios independently of
-the street-display selector and budget, using the maximum 45-minute route search.
-Selected destinations show baseline/bridge times and route overlays; selecting
-None clears them. No Siting scores, capacity assumptions or rankings change.
+origin or an editable bridge. The origin is a representative point inside
+Roosevelt Island, connected to the island greenway with an assumed access link.
+Baseline-only hides the proposed bridge/Queens approach. The baseline can reach
+Queens over the existing Roosevelt Island pedestrian crossing; the bridge
+scenario adds a direct crossing to the provisional Queens landing. No Siting
+scores, capacity assumptions or rankings change.
 
-At the assumed 3 mph, the provisional island endpoint is **29.8 minutes baseline
-versus 5.4 minutes with the hypothetical bridge**. Queens source-node counts
-at 15/30/45 minutes remain 188/825/2,127 in both scenarios. Island counts change
-from 0/62/150 to 53/132/153. These are graph diagnostics, not jobs or population.
-From this Queens origin no Queens source-node times improve within 45 minutes.
+At the assumed 3 mph, Queens source-node counts at 15/30/45 minutes are
+9/319/1,169 baseline versus 9/345/1,261 with the bridge. Roosevelt Island counts
+are 116/153/153 in both scenarios. At 45 minutes, 295 Queens source-node times
+improve and 92 additional Queens nodes are reached. These are graph diagnostics,
+not jobs or population.
 
-The 554.4-ft straight crossing, landing access and internal site access are
-assumptions—not engineered geometry or verified public access. LION 26c physical
+The 554.4-ft straight crossing, 283.2-ft Roosevelt Island origin access and
+landing access are assumptions—not engineered geometry or verified public
+access. LION 26c physical
 pedestrian edges connect by source node ID plus endpoint level; no connections
 are invented at geometric street crossings. Sidewalk/crossing completeness,
 signals, slope, clearance, ramps, stairs/elevators and operating hours remain
 unverified or unmodeled. Island detail is provisional. Lines depict reachable
 street intervals, not all reachable land, and this is not a pedestrian navigation
 service or step-free analysis. Cycling, transit, vehicle and financial effects
-are not included. Blank destination times mean not reached within 45 minutes.
+are not included.
 
 [`assets/connectivity/walking.json`](assets/connectivity/walking.json) is a
-3.72 MB source-checked export from the companion POSTGIS walking pipeline.
+2.15 MB source-checked export from the companion POSTGIS walking pipeline.
 It retains exact saved EPSG:4326 display geometries, source numerical summaries,
-route times, scenario settings and provenance; no simplification or browser
+scenario settings and provenance; no simplification or browser
 rerouting is performed. It omits the full citywide routing graph and display-only
 buffer polygons. The browser fetches it only when Connectivity is selected;
 failed downloads/invalid payloads show an explicit error and retry control,

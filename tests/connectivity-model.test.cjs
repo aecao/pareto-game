@@ -8,7 +8,8 @@ test("verified walking snapshot validates without mutation", () => {
   assert.equal(model.validate(data), data);
   assert.equal(JSON.stringify(data), original);
   assert.equal(data.summary.length, 6);
-  assert.equal(data.destination_times.length, 5);
+  assert.equal("example_routes" in data, false);
+  assert.equal("destination_times" in data, false);
 });
 
 test("every budget/scenario selector returns exact source feature membership", () => {
@@ -25,28 +26,35 @@ test("every budget/scenario selector returns exact source feature membership", (
   assert.throws(() => model.selection(data, 15, "transit"), /selection/);
 });
 
-test("Queens counts and island baseline/scenario times preserve source findings", () => {
-  for (const budget of [15, 30, 45]) {
-    const rows = data.summary.filter((r) => r.budget_minutes === budget);
-    assert.equal(rows[0].queens_source_nodes, rows[1].queens_source_nodes);
-    assert.ok(rows[1].island_source_nodes > rows[0].island_source_nodes);
-  }
-  const island = data.destination_times.find((r) => r.destination === "Roosevelt Island landing street");
-  assert.ok(Math.abs(island.baseline_minutes - 29.797635235154) < 0.00001);
-  assert.ok(Math.abs(island.bridge_minutes - 5.377442802396105) < 1e-10);
-  assert.equal(data.validation.queens_nodes_improved, 0);
+test("Roosevelt Island origin yields distinct baseline and bridge reachability", () => {
+  assert.equal(data.validation.origin_is_roosevelt_island, true);
+  assert.equal(data.validation.existing_island_bridge_in_baseline, true);
+  assert.equal(data.validation.hypothetical_bridge_in_scenario, true);
+  assert.ok(data.markers.features.some((feature) =>
+    feature.properties.name === "Roosevelt Island origin (assumed internal access)"));
+  assert.ok([15, 30, 45].some((budget) => {
+    const rows = data.summary.filter((row) => row.budget_minutes === budget);
+    return rows[0].queens_source_nodes !== rows[1].queens_source_nodes
+      || rows[0].island_source_nodes !== rows[1].island_source_nodes;
+  }));
 });
 
 for (const [name, corrupt] of [
   ["schema", (d) => { d.schema_version = 99; }],
   ["duplicate summary", (d) => { d.summary[0] = d.summary[1]; }],
   ["coordinate", (d) => { d.markers.features[0].geometry.coordinates = [0, 0]; }],
-  ["route disagreement", (d) => { d.example_routes.features[0].properties.minutes += 1; }],
-  ["missing routes", (d) => { d.example_routes.features.pop(); }],
-  ["invalid time", (d) => { d.destination_times[0].baseline_minutes = -1; }],
+  ["Queens origin", (d) => { d.settings.origin_method = "site_representative_point_with_explicit_access_connector"; }],
+  ["example route payload", (d) => { d.example_routes = { type: "FeatureCollection", features: [] }; }],
+  ["identical scenarios", (d) => {
+    for (const bridge of d.summary.filter((row) => row.scenario === "bridge")) {
+      const baseline = d.summary.find((row) =>
+        row.scenario === "baseline" && row.budget_minutes === bridge.budget_minutes);
+      bridge.queens_source_nodes = baseline.queens_source_nodes;
+      bridge.island_source_nodes = baseline.island_source_nodes;
+    }
+  }],
   ["missing budget", (d) => { d.reachable_streets.features = d.reachable_streets.features.filter((f) => f.properties.budget_minutes !== 15); }],
   ["link cost", (d) => { d.scenario_links.features[0].properties.minutes = null; }],
-  ["unsupported Queens change", (d) => { d.validation.queens_nodes_improved = 5; }],
 ]) {
   test(`reject corrupt payload: ${name}`, () => {
     const copy = structuredClone(data);

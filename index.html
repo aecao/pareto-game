@@ -109,17 +109,15 @@
         </section>
 
         <section class="connectivity-only connectivity-parameters" hidden aria-labelledby="connectivity-heading">
-          <span class="eyebrow">QUEENS / WALKING PROTOTYPE</span>
+          <span class="eyebrow">ROOSEVELT ISLAND / WALKING PROTOTYPE</span>
           <h1 id="connectivity-heading">Connectivity</h1>
-          <p class="section-note">Origin: Q00313_4003130001, the two-lot assemblage at Costco Esplanade. Compare existing routes with a hypothetical Roosevelt Island bridge.</p>
+          <p class="section-note">Origin: an assumed access point on Roosevelt Island. Compare the existing walking network with a hypothetical bridge to Queens site Q00313_4003130001.</p>
           <fieldset id="connectivity-fields" disabled>
             <legend>Walking scenario</legend>
             <label for="connectivity-budget">Travel-time budget</label>
             <select id="connectivity-budget"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option></select>
             <label for="connectivity-scenario">Map comparison</label>
             <select id="connectivity-scenario"><option value="both">Baseline + bridge</option><option value="baseline">Baseline only</option><option value="bridge">With bridge only</option></select>
-            <label for="connectivity-route">Example route <span>Computed within 45 minutes</span></label>
-            <select id="connectivity-route"><option value="">None</option></select>
           </fieldset>
           <p id="connectivity-state" role="status" aria-live="polite">Select Connectivity to load walking results.</p>
           <p id="connectivity-error" class="siting-error" role="alert" hidden></p>
@@ -131,10 +129,10 @@
           </div>
           <details class="method-note">
             <summary>Method &amp; limitations</summary>
-            <p>Precomputed walking results, not live routing. Constant 3 mph; no slope, crossing, stairs or elevator delay. The 554-foot straight bridge and access links are provisional, not engineered or legally approved.</p>
+            <p>Precomputed walking reachability, not live routing. The origin is a representative point inside Roosevelt Island, connected to the island greenway by an assumed access link. Constant 3 mph; no slope, crossing, stairs or elevator delay. The 554-foot straight bridge and access links are provisional, not engineered or legally approved.</p>
             <p>Source node IDs and endpoint levels define connectivity. Shorelines, boundary lines, vehicle-only roads and unbuilt streets are excluded. Sidewalks, crossings, barriers and access hours remain incomplete; this is not a pedestrian navigation service or step-free analysis.</p>
-            <p>Lines show reachable street intervals, not all reachable land. Node counts are network diagnostics, not population or jobs. Blank travel times mean not reached within 45 minutes.</p>
-            <p>Roosevelt Island internal routing is provisional. Queens travel times need not improve when a bridge is added. No cycling, transit, vehicle, rent or property-value effects are modeled. Siting rankings are unchanged.</p>
+            <p>Lines show reachable street intervals, not all reachable land. Node counts are network diagnostics, not population or jobs. The baseline can reach Queens over the existing Roosevelt Island pedestrian bridge; the bridge scenario adds a direct crossing to the provisional Queens landing.</p>
+            <p>Roosevelt Island internal routing is provisional. No cycling, transit, vehicle, rent or property-value effects are modeled. Siting rankings are unchanged.</p>
             <a href="assets/connectivity/walking.json" download>Download walking snapshot (JSON)</a>
           </details>
         </section>
@@ -233,15 +231,8 @@
         <section class="siting-detail">
           <h3>Reachability at selected budget</h3>
           <dl id="connectivity-metrics" class="siting-metrics"></dl>
-          <p class="section-note">Queens counts are unchanged in this snapshot. The new bridge improves island access, not Queens-to-Queens trips from this origin.</p>
+          <p class="section-note">The baseline reaches Queens over the existing crossing; the hypothetical bridge adds a different Queens connection from the island-side origin.</p>
         </section>
-        <div class="connectivity-table">
-          <table class="ranking-table">
-            <caption>Example walking times in minutes. Select a destination to show both routes; route times use the 45-minute maximum, independently of the map budget.</caption>
-            <thead><tr><th scope="col">Destination</th><th scope="col">Baseline</th><th scope="col">Bridge</th></tr></thead>
-            <tbody id="connectivity-destinations"></tbody>
-          </table>
-        </div>
       </aside>
       <section class="market-only market-results" hidden aria-label="Market series results">
         <span class="eyebrow">MARKET CONTEXT / NO SPATIAL CROSSWALK</span>

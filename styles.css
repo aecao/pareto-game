@@ -237,8 +237,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .connectivity-link { color: var(--map-building); border-top-style: dashed !important; }
 .connectivity-results { background: white; border-left: 1px solid var(--line); min-height: 0; overflow-y: auto; }
 #connectivity-summary { font-size: 14px; line-height: 1.5; }
-.connectivity-table { overflow-x: auto; }
-.connectivity-table .site-select[aria-pressed="true"] { color: var(--blue); }
 .is-connectivity .map-title { display: none; }
 @media (max-width: 1100px) and (min-width: 851px) {
   .workspace.is-connectivity { grid-template-columns: 240px minmax(200px, 1fr) 280px; }

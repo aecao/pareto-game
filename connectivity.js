@@ -2,13 +2,11 @@
 
 const connectivityGroup = L.featureGroup();
 const connectivityStreets = L.featureGroup().addTo(connectivityGroup);
-const connectivityRoutes = L.featureGroup().addTo(connectivityGroup);
 const connectivityLinks = L.featureGroup().addTo(connectivityGroup);
 const connectivityFields = document.getElementById("connectivity-fields");
 const connectivityState = document.getElementById("connectivity-state");
 const connectivityError = document.getElementById("connectivity-error");
 const connectivityRetry = document.getElementById("connectivity-retry");
-const connectivityRoute = document.getElementById("connectivity-route");
 let connectivityData = null;
 let connectivityLoading = false;
 let connectivityBounds = null;
@@ -32,29 +30,6 @@ function fitConnectivityMap() {
   map.fitBounds(connectivityBounds, { padding: [24, 24], animate: false });
 }
 
-function renderConnectivityRoute() {
-  connectivityRoutes.clearLayers();
-  const destination = connectivityRoute.value;
-  document.querySelectorAll("[data-connectivity-destination]").forEach((button) => {
-    button.setAttribute("aria-pressed", String(button.dataset.connectivityDestination === destination));
-  });
-  if (!destination) return;
-  const collection = {
-    type: "FeatureCollection",
-    features: connectivityData.example_routes.features.filter((f) => f.properties.destination === destination),
-  };
-  L.geoJSON(collection, {
-    style: (f) => ({
-      color: f.properties.scenario === "baseline" ? mapPalette.selected : mapPalette.building,
-      weight: f.properties.scenario === "baseline" ? 7 : 3, opacity: 0.9,
-    }),
-    onEachFeature(f, layer) {
-      layer.bindPopup(connectivityPopup(destination,
-        `${f.properties.scenario}: ${f.properties.minutes.toFixed(2)} min (45-minute routing budget)`));
-    },
-  }).addTo(connectivityRoutes);
-}
-
 function renderConnectivity() {
   if (!connectivityData) return;
   const budget = Number(document.getElementById("connectivity-budget").value);
@@ -74,14 +49,13 @@ function renderConnectivity() {
   connectivityLinks.clearLayers();
   L.geoJSON(connectivityData.scenario_links, {
     filter: (f) => scenario !== "baseline"
-      || ["site_origin:access", "island_landing:access"].includes(f.properties.name),
+      || ["roosevelt_origin:access", "island_landing:access"].includes(f.properties.name),
     style: { color: mapPalette.building, weight: 4, dashArray: "7 5" },
     onEachFeature(f, layer) {
       layer.bindPopup(connectivityPopup(f.properties.street,
         `${f.properties.length_ft.toFixed(1)} ft / ${f.properties.minutes.toFixed(2)} min; hypothetical/assumed access`));
     },
   }).addTo(connectivityLinks);
-  connectivityRoutes.bringToFront();
   const rows = connectivityData.summary.filter((row) => row.budget_minutes === budget);
   const baseline = rows.find((row) => row.scenario === "baseline");
   const bridge = rows.find((row) => row.scenario === "bridge");
@@ -93,10 +67,9 @@ function renderConnectivity() {
     ["Island nodes: baseline", baseline.island_source_nodes],
     ["Island nodes: bridge", bridge.island_source_nodes],
   ]) metrics.append(connectivityNode("dt", label), connectivityNode("dd", value.toLocaleString("en-US")));
-  const island = connectivityData.destination_times.find((row) => row.destination === "Roosevelt Island landing street");
   document.getElementById("connectivity-summary").textContent =
-    `Island landing: ${island.baseline_minutes.toFixed(1)} min baseline / ${island.bridge_minutes.toFixed(1)} min with bridge.`;
-  connectivityState.textContent = `${budget}-minute reachability / ${scenario === "both" ? "both scenarios" : scenario}. Fixed origin; no live routing.`;
+    `Origin: Roosevelt Island. Counts show source street nodes reachable within ${budget} minutes.`;
+  connectivityState.textContent = `${budget}-minute reachability / ${scenario === "both" ? "both scenarios" : scenario}. Fixed Roosevelt Island origin; no live routing.`;
 }
 
 async function loadConnectivity() {
@@ -117,41 +90,15 @@ async function loadConnectivity() {
     L.geoJSON(data.island, {
       style: { color: mapPalette.island, weight: 1, fillOpacity: 0.02 },
     }).addTo(connectivityGroup);
-    L.geoJSON(data.markers, {
+    const markers = L.geoJSON(data.markers, {
       pointToLayer: (_f, latlng) => L.circleMarker(latlng, {
         radius: 5, color: mapPalette.selected, fillColor: "#fff", fillOpacity: 1,
       }),
       onEachFeature(f, layer) { layer.bindTooltip(f.properties.name); },
     }).addTo(connectivityGroup);
-    connectivityRoute.replaceChildren(connectivityNode("option", "None"));
-    connectivityRoute.firstElementChild.value = "";
-    const destinations = document.getElementById("connectivity-destinations");
-    destinations.replaceChildren();
-    for (const row of data.destination_times) {
-      const option = connectivityNode("option", row.destination);
-      option.value = row.destination;
-      connectivityRoute.append(option);
-      const tr = document.createElement("tr");
-      const cell = document.createElement("td");
-      const button = connectivityNode("button", row.destination);
-      button.type = "button";
-      button.className = "site-select";
-      button.dataset.connectivityDestination = row.destination;
-      button.setAttribute("aria-pressed", "false");
-      button.addEventListener("click", () => {
-        connectivityRoute.value = row.destination;
-        renderConnectivityRoute();
-      });
-      cell.append(button);
-      tr.append(cell);
-      for (const scenario of ["baseline", "bridge"]) {
-        const minutes = row[`${scenario}_minutes`];
-        tr.append(connectivityNode("td", minutes === null ? "Not reached" : minutes.toFixed(2)));
-      }
-      destinations.append(tr);
-    }
+    connectivityBounds = L.featureGroup([site, markers]).getBounds().pad(1.2);
     document.getElementById("connectivity-provenance").textContent =
-      `LION ${data.provenance.lion} / ${data.provenance.source_edges.toLocaleString("en-US")} source edges. ${data.bridge_length_ft.toFixed(1)}-ft hypothetical crossing; ${data.settings.walking_speed_mph} mph. Exact saved geometry and travel times.`;
+      `LION ${data.provenance.lion} / ${data.provenance.source_edges.toLocaleString("en-US")} source edges. ${data.bridge_length_ft.toFixed(1)}-ft hypothetical crossing; ${data.settings.walking_speed_mph} mph. Exact saved display geometry and reachability summaries.`;
     connectivityFields.disabled = false;
     renderConnectivity();
     if (document.body.dataset.mode === "connectivity") {
@@ -161,10 +108,8 @@ async function loadConnectivity() {
   } catch (error) {
     connectivityGroup.clearLayers();
     connectivityStreets.clearLayers();
-    connectivityRoutes.clearLayers();
     connectivityLinks.clearLayers();
     connectivityStreets.addTo(connectivityGroup);
-    connectivityRoutes.addTo(connectivityGroup);
     connectivityLinks.addTo(connectivityGroup);
     connectivityData = null;
     connectivityBounds = null;
@@ -176,7 +121,6 @@ async function loadConnectivity() {
     document.getElementById("connectivity-summary").textContent = "Connectivity unavailable.";
     document.getElementById("connectivity-provenance").textContent = "";
     document.getElementById("connectivity-metrics").replaceChildren();
-    document.getElementById("connectivity-destinations").replaceChildren();
     console.error("Connectivity load failed", error);
   } finally {
     connectivityLoading = false;
@@ -185,5 +129,4 @@ async function loadConnectivity() {
 
 document.getElementById("connectivity-budget").addEventListener("change", renderConnectivity);
 document.getElementById("connectivity-scenario").addEventListener("change", renderConnectivity);
-connectivityRoute.addEventListener("change", renderConnectivityRoute);
 connectivityRetry.addEventListener("click", loadConnectivity);
