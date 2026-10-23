@@ -24,6 +24,7 @@
         <button type="button" data-mode="siting" aria-pressed="false">Siting</button>
         <button type="button" data-mode="connectivity" aria-pressed="false">Connectivity</button>
         <button type="button" data-mode="market" aria-pressed="false">Market</button>
+        <button type="button" data-mode="housing" aria-pressed="false">Housing</button>
       </nav>
     </header>
 
@@ -196,6 +197,14 @@
           </div>
         </section>
 
+        <section class="panel-section housing-only" hidden aria-label="Housing sources">
+          <span class="eyebrow">HOUSING / DEVELOPMENT REVENUE</span>
+          <h1>Housing</h1>
+          <p class="section-note">Live published Google Sheet: developments and buildings. Revenue uses the period printed in the source, not today's date.</p>
+          <button id="housing-refresh" type="button" class="secondary-button">Refresh from sheet</button>
+          <p id="housing-state" role="status" aria-live="polite">Open Housing to load data.</p>
+          <p class="section-note"><a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6qlE4hFULSfzCQ9ZwbQqA8jIEkcfJMfg8Ro4GulHRZpl9oRDl6ank0QavwYA8U6AFXdJFELQNdP1y/pubhtml?gid=2081099550">Developments source</a> · <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6qlE4hFULSfzCQ9ZwbQqA8jIEkcfJMfg8Ro4GulHRZpl9oRDl6ank0QavwYA8U6AFXdJFELQNdP1y/pubhtml?gid=898231653">Buildings source</a></p>
+        </section>
         <div class="sidebar-footer exploration-only">
           <span class="footer-rule"></span>
           <span class="eyebrow">A PLACE-BASED IMPACT STUDY</span>
@@ -358,6 +367,46 @@
           </details>
         </div>
       </section>
+      <section class="housing-only housing-results" aria-label="Housing" hidden>
+        <span class="eyebrow">ROOSEVELT ISLAND / LIVE SHEET</span>
+        <h2>Revenue by development</h2>
+        <p id="housing-period"></p>
+        <p class="section-note">Highest revenue first. Touching wide bars stack operating-fund revenue, capital-fund revenue, ground rent and public safety reimbursement. NPV is not revenue and is excluded.</p>
+        <div id="housing-legend" class="housing-legend" aria-label="Revenue components">
+          <span style="--housing-color: #0035ff">Operating fund</span>
+          <span style="--housing-color: #839cff">Capital fund</span>
+          <span style="--housing-color: #2a6c68">Ground rent</span>
+          <span style="--housing-color: #b8432f">Public safety reimbursement</span>
+        </div>
+        <div id="housing-chart" class="housing-chart" tabindex="0" role="region" aria-label="Scrollable development revenue chart"></div>
+        <p id="housing-general" class="siting-warning"></p>
+        <p id="housing-warnings" class="section-note"></p>
+        <div class="housing-table-scroll" tabindex="0" role="region" aria-label="Housing source values">
+          <table class="ranking-table">
+            <caption>Revenue components ($)</caption>
+            <thead><tr><th scope="col">Development</th><th scope="col">Operating fund</th><th scope="col">Capital fund</th><th scope="col">Ground rent</th><th scope="col">Public safety</th><th scope="col">Total</th></tr></thead>
+            <tbody id="housing-values"></tbody>
+          </table>
+        </div>
+        <h2 class="housing-unit-heading">Unit mix by building</h2>
+        <p class="section-note">One square = one housing unit. Each building has ten columns of icons; more units create a taller array, with no rounding or partial icons. Arrays fill left to right from the bottom, grouped by development (in the revenue chart's order), then building number. Colors show market-rent, market-condo, institutional and affordable units as classified in the sheet, not bedroom counts or independently verified affordability.</p>
+        <div class="housing-legend" aria-label="Unit mix categories">
+          <span style="--housing-color: #0035ff">Market-rent</span>
+          <span style="--housing-color: #839cff">Market-condo</span>
+          <span style="--housing-color: #2a6c68">Institutional</span>
+          <span style="--housing-color: #b8432f">Affordable</span>
+          <span style="--housing-color: #ccc">Unclassified remainder</span>
+        </div>
+        <p class="section-note">Blank cells and “some” remain unknown. When a total is known, any remainder after reported category counts is gray, not allocated to a guessed category. Zero remainder does not turn missing cells into reported zeros. Buildings with no counts are labeled “Units unknown.” Named buildings without a development link appear under Unassigned; payment-only and empty placeholder rows are omitted. Unit data have no separate observation date in the sheet.</p>
+        <div id="housing-unit-chart" class="housing-chart" tabindex="0" role="region" aria-label="Scrollable building unit mix icon arrays"></div>
+        <div class="housing-table-scroll" tabindex="0" role="region" aria-label="Building unit source values">
+          <table class="ranking-table">
+            <caption>Building unit counts; unknown source cells preserved</caption>
+            <thead><tr><th scope="col">Building</th><th scope="col">Development</th><th scope="col">Market-rent</th><th scope="col">Market-condo</th><th scope="col">Institutional</th><th scope="col">Affordable</th><th scope="col">Reported total</th><th scope="col">Unclassified remainder</th></tr></thead>
+            <tbody id="housing-unit-values"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -373,5 +422,7 @@
     <script src="scenario.js"></script>
     <script src="far-model.js"></script>
     <script src="far.js"></script>
+    <script src="housing-model.js"></script>
+    <script src="housing.js"></script>
   </body>
 </html>

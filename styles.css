@@ -28,6 +28,28 @@
 }
 
 * { box-sizing: border-box; }
+.housing-results { min-width: 0; min-height: 0; overflow-y: auto; padding: 30px; }
+.housing-results h2 { font-size: 30px; margin: 12px 0; }
+.housing-results .housing-unit-heading { margin-top: 48px; }
+#housing-state { font-size: 12px; line-height: 1.6; }
+.housing-legend { display: flex; flex-wrap: wrap; gap: 12px 20px; font-size: 12px; margin: 20px 0; }
+.housing-legend span::before { content: ""; display: inline-block; width: 14px; height: 14px; border: 1px solid var(--ink); background: var(--housing-color); margin-right: 6px; vertical-align: middle; }
+.housing-chart { overflow-x: auto; border: 1px solid var(--line); }
+.housing-chart svg { display: block; width: 100%; min-width: 1050px; height: auto; }
+.housing-chart text { font-size: 12px; fill: var(--ink); }
+.housing-chart .housing-total, .housing-chart .housing-name { font-weight: 600; }
+.housing-grid { stroke: var(--line); }
+.housing-building-name { font-weight: 600; }
+.housing-chart .housing-building-address { fill: var(--muted); font-size: 11px; }
+.housing-table-address { display: block; margin-top: 5px; color: var(--muted); font-weight: 400; }
+.housing-table-scroll { overflow: auto; max-height: 420px; margin-top: 24px; }
+.housing-table-scroll table { min-width: 1050px; }
+@media (max-width: 850px) {
+  body:has(.workspace.is-housing) { overflow-y: auto; }
+  .workspace.is-housing { display: grid; grid-template-columns: minmax(0, 1fr); height: auto; min-height: calc(100% - 110px); }
+  .is-housing .sidebar { position: static; width: auto; max-height: none; overflow: visible; margin: 0; border: 0; border-bottom: 1px solid var(--line); }
+  .housing-results { overflow: visible; padding: 20px; }
+}
 html, body { width: 100%; height: 100%; margin: 0; }
 body { min-width: 320px; overflow: hidden; }
 button, input, select { font: inherit; }

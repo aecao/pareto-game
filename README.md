@@ -86,6 +86,43 @@ completed walking manifest and retains exact source GeoJSON and numerical values
 Node tests validate all budgets/scenarios, source findings and corrupt-snapshot
 rejection. GitHub Pages runs both Siting and Connectivity tests.
 
+## Housing mode
+
+Housing loads the live published Google Sheet's `developments` (gid 2081099550)
+and `buildings` (gid 898231653) tabs on entry and on **Refresh from sheet**.
+Publication can lag edits. A failed request or invalid schema displays an
+explicit error and no chart, not a stale or fabricated fallback.
+
+Wide, touching revenue bars are ordered highest first and stack operating-fund
+revenue, capital-fund revenue, ground rent and public-safety reimbursement.
+Their sum must equal the reported total. NPV columns are excluded. The period
+is copied from the sheet; values are not annualized. `General` is shown
+separately as unclassified, not ranked among developments.
+
+The development chart displays revenue only; floor overlays and height columns
+are currently removed. Floor fields remain preserved in the parsed source data.
+
+A second chart uses icon arrays to show individual building unit counts, grouped
+by the revenue chart's development order and then natural building-number order.
+Each square is exactly one unit. Every building uses ten columns with identical
+icon sizes and spacing, filling left to right from the bottom; larger counts
+produce taller arrays. Category colors are preserved with no rounding.
+Building labels use `aka`, with the source building name as fallback, and show
+the address underneath (or explicitly say unknown). Original building names
+remain the identity and sorting keys; aliases do not reorder building numbers.
+Categories are market-rent, market-condo, institutional and affordable, not
+bedroom types. Blank or `some` category cells remain unknown. A known total's
+unallocated remainder is gray, never distributed among guessed categories.
+The source table preserves unknown cells even if the remainder is zero.
+Inconsistent known totals fail explicitly. Named buildings with unit data but
+no development link (including an `aka` name when `building` is blank) appear
+under Unassigned. Payment-only rows and unnamed placeholders are omitted.
+Buildings linked to a development with no unit data remain labeled unknown.
+No observation date for unit counts is supplied separately in the source.
+
+Tests use preserved public CSV fixtures retrieved 2026-10-23 in
+`tests/fixtures/housing/`; runtime does not use those fixtures.
+
 ## Siting mode
 
 Select **Siting** in the header to explore the Queens waterfront pilot. The
