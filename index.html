@@ -113,29 +113,32 @@
         <section class="connectivity-only connectivity-parameters" hidden aria-labelledby="connectivity-heading">
           <span class="eyebrow">ROOSEVELT ISLAND / WALKING PROTOTYPE</span>
           <h1 id="connectivity-heading">Connectivity</h1>
-          <p class="section-note">Origin: the island-side bridge landing on Roosevelt Island. Compare the existing walking network with a hypothetical bridge to Queens site Q00313_4003130001.</p>
+          <p class="section-note">Origin: the centre of Roosevelt Island. Toggle proposed pedestrian bridges to compare walking reach with today's network.</p>
           <fieldset id="connectivity-fields" disabled>
             <legend>Walking scenario</legend>
-            <label for="connectivity-budget">Travel-time budget</label>
-            <select id="connectivity-budget"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option></select>
+            <div id="connectivity-bridges" class="connectivity-bridges" role="group" aria-label="Proposed bridges"></div>
+            <label for="connectivity-budget">Travel-time budget: <output id="connectivity-budget-value" for="connectivity-budget">45 min</output></label>
+            <input id="connectivity-budget" type="range" min="0" max="60" step="1" value="45">
+            <div class="connectivity-range-scale" aria-hidden="true"><span>0</span><span>15</span><span>30</span><span>45</span><span>60 min</span></div>
             <label for="connectivity-scenario">Map comparison</label>
-            <select id="connectivity-scenario"><option value="both">Baseline + bridge</option><option value="baseline">Baseline only</option><option value="bridge">With bridge only</option></select>
+            <select id="connectivity-scenario"><option value="both">Baseline + selected bridges</option><option value="baseline">Baseline only</option><option value="selected">Selected bridges only</option></select>
           </fieldset>
           <p id="connectivity-state" role="status" aria-live="polite">Select Connectivity to load walking results.</p>
           <p id="connectivity-error" class="siting-error" role="alert" hidden></p>
           <button id="connectivity-retry" type="button" class="secondary-button" hidden>Retry loading data</button>
           <div class="connectivity-legend">
             <p><span class="connectivity-baseline"></span> Baseline reachable streets</p>
-            <p><span class="connectivity-bridge"></span> Bridge-scenario reachable streets</p>
-            <p><span class="connectivity-link"></span> Hypothetical bridge / assumed access</p>
+            <p><span class="connectivity-bridge"></span> Reachable with selected bridges</p>
+            <p><span class="connectivity-link"></span> Proposed bridge / assumed access (faint when off)</p>
+            <p id="connectivity-legend-scale" class="connectivity-legend-scale"></p>
           </div>
           <details class="method-note">
             <summary>Method &amp; limitations</summary>
-            <p>Precomputed walking reachability, not live routing. Both scenarios start at the Roosevelt Island bridge landing, connected to the island greenway by an assumed access link. Constant 3 mph; no slope, crossing, stairs or elevator delay. The 554-foot straight bridge and access links are provisional, not engineered or legally approved.</p>
+            <p>Precomputed walking reachability for every on/off combination of the three proposed bridges, not live routing. Every scenario starts at the island centroid, linked to the nearest street. Bridge ends link to the nearest point on the nearest ground-level street on the same side of the river. Constant 3 mph; no slope, crossing, stairs or elevator delay, except a 3-minute penalty for getting on or off LIC–Midtown at its Roosevelt Island midpoint (walking straight across is not penalised). Bridge alignments and access links are provisional, not engineered or legally approved.</p>
             <p>Source node IDs and endpoint levels define connectivity. Shorelines, boundary lines, vehicle-only roads and unbuilt streets are excluded. Sidewalks, crossings, barriers and access hours remain incomplete; this is not a pedestrian navigation service or step-free analysis.</p>
-            <p>Lines show reachable street intervals, not all reachable land. Node counts are network diagnostics, not population or jobs. The baseline can reach Queens over the existing Roosevelt Island pedestrian bridge; the bridge scenario adds a direct crossing to the provisional Queens landing.</p>
+            <p>Lines show reachable street intervals, not all reachable land, shaded in 5-minute walking-time bands (network time, not straight-line distance). The budget slider covers 0–60 minutes; metrics are computed in the browser and match the precomputed 15/30/45/60-minute checks. Node counts are network diagnostics, not population or jobs. The baseline can reach Queens over the existing Roosevelt Island Bridge walkway; the tram and subway are not modeled.</p>
             <p>Roosevelt Island internal routing is provisional. No cycling, transit, vehicle, rent or property-value effects are modeled. Siting rankings are unchanged.</p>
-            <a href="assets/connectivity/walking.json?v=island-landing-v1" download>Download walking snapshot (JSON)</a>
+            <a href="assets/connectivity/walking.json?v=three-bridges-v7" download>Download walking snapshot (JSON)</a>
           </details>
         </section>
 
@@ -426,8 +429,8 @@
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
     <script src="siting.js"></script>
-    <script src="connectivity-model.js?v=island-landing-v1"></script>
-    <script src="connectivity.js?v=island-landing-v1"></script>
+    <script src="connectivity-model.js?v=three-bridges-v7"></script>
+    <script src="connectivity.js?v=three-bridges-v7"></script>
     <script src="market-model.js"></script>
     <script src="market.js"></script>
     <script src="model-interaction.js"></script>
