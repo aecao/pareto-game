@@ -300,6 +300,7 @@ function setStudyMode(mode) {
     ? "Interactive household income map of NYC at the selected area scale" : "Interactive map of Roosevelt Island");
   document.querySelectorAll(".exploration-only").forEach((element) => { element.hidden = mode !== "exploration"; });
   map.closePopup();
+  leaveExplore();
   map.removeLayer(sitingGroup);
   map.removeLayer(connectivityGroup);
   map.removeLayer(buildingLayer);
@@ -332,11 +333,12 @@ function setStudyMode(mode) {
       loadIncome();
     }
   } else {
-    buildingLayer.addTo(map);
+    if (document.getElementById("explore-buildings").checked) buildingLayer.addTo(map);
     map.setMaxBounds(studyBounds);
     map.setMinZoom(13);
     map.invalidateSize();
     map.setView(islandCenter, islandZoom, { animate: false });
+    loadExplore();
   }
 }
 

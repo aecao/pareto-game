@@ -52,16 +52,15 @@
             <span class="section-index">02</span>
           </div>
           <div class="layer-row">
-            <span class="layer-symbol boundary-symbol" aria-hidden="true"></span>
-            <span class="layer-label">Island boundary</span>
-            <span class="layer-state">AWAITING DATA</span>
-          </div>
-          <div class="layer-row">
-            <span class="layer-symbol place-symbol" aria-hidden="true"></span>
-            <span class="layer-label">Building footprints</span>
+            <label class="explore-check"><input id="explore-buildings" type="checkbox" checked />Building footprints</label>
             <span class="layer-state" id="building-state" aria-live="polite">LOADING</span>
           </div>
-          <p class="section-note layer-note">Geometry: NYC DoITT · attributes: PLUTO / CSV</p>
+          <button id="explore-fit" class="secondary-button" type="button">Fit all NYC</button>
+          <p id="explore-state" role="status" aria-live="polite">Loading GeoPackage layers...</p>
+          <button id="explore-retry" class="secondary-button" type="button" hidden>Retry Explore layers</button>
+          <p class="section-note">GeoPackage layers cover NYC. Zoom to level 14+ for detail. Expand a heading to toggle its categories; the checkbox beside the heading toggles the entire layer.</p>
+          <div id="explore-layers"></div>
+          <p class="section-note">Source: mostlypluto.gpkg. Historical districts use designated tax lots, not dissolved district boundaries. Owner types are source codes; unknown does not prove private ownership.</p>
         </section>
 
         <section class="siting-only siting-parameters" hidden aria-labelledby="siting-heading">
@@ -449,5 +448,7 @@
     <script src="housing.js"></script>
     <script src="income-model.js?v=income-scales-v4"></script>
     <script src="income.js?v=income-scales-v4"></script>
+    <script src="explore-model.js"></script>
+    <script src="explore.js"></script>
   </body>
 </html>

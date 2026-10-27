@@ -2,6 +2,74 @@
 
 A static Roosevelt Island mapping study, designed for GitHub Pages.
 
+## Explore: GeoPackage layers
+
+Explore includes the seven spatial layers from the supplied `mostlypluto.gpkg`.
+Each heading has a visibility checkbox and a separate chevron button. Expand
+the heading for **All** and individual color-coded category checkboxes, following
+the Relationships / Scale filter pattern in
+[roosevelt-networks](https://github.com/aecao/roosevelt-networks).
+The All control is indeterminate when only some categories are selected.
+Turning a layer off/on remembers its category selection. Collapsing a heading
+only hides its controls; it never changes visibility or dissolves polygons.
+**Historical districts starts disabled and collapsed.** Building footprints
+also have a toggle.
+
+| Layer | NYC features | Categories |
+|---|---:|---|
+| Empty lots | 24,380 | All source features (LandUse 11) |
+| Historical districts | 31,684 | 160 named `HistDist` values |
+| Industrial / transportation | 15,363 | Industrial: LandUse 06 (9,293); Transportation: 07 (6,070) |
+| Lot owner type | 856,906 | Seven `OwnerType` values, including unknown |
+| Parking lots | 20,429 | All source features |
+| Parks properties | 2,061 | 34 `jurisdiction` categories |
+| Publicly owned waterfront | 199 | All source features |
+
+Saved QGIS category fields/labels are retained, except Industrial explicitly
+uses the user-requested LandUse 06/07 classification. Category colors are
+distinct within each layer. Historical districts shows **designated tax lots**,
+not dissolved district outlines; 825,222 source lots without `HistDist` are
+excluded, matching their disabled null category in the saved style. Unknown
+ownership is not evidence of private ownership. OwnerType S keeps the source's
+unexplained "null" label rather than guessing its meaning.
+
+Lot owner type and Historical districts start off. Their independent tile
+groups are not requested until each layer is enabled; toggling either on loads
+only that layer's viewport tiles. Other layers start visible. Zoom to **14+**
+to load neighborhood-scale detail, pan
+anywhere in NYC, or use **Fit all NYC** for orientation. At smaller zooms the
+overlays are deliberately hidden with a zoom notice. Home returns to Roosevelt
+Island. Layer/category choices survive mode switching. Imported layers are
+removed outside Explore and never affect Siting, Connectivity or Income.
+
+The [catalog](assets/explore_lite8/index.json) describes compressed XYZ-indexed GeoJSON
+tiles. Only tiles for enabled layer groups in the current viewport are requested,
+with four concurrent requests and a bounded 32-tile LRU cache. Ownership,
+Historical districts, and Industrial have separate groups, so enabling Historic
+or Industrial does not fetch all 856,906 ownership parcels. Their source parcel
+copies were verified identical before independent display export.
+Display geometries are simplified in EPSG:2263 (1 ft for parcels and
+vacant lots, 2 ft for parking, 5 ft for parks and waterfront), then clipped to
+each tile in WGS84 and rounded to eight decimal places for display; repeated
+features carry stable IDs for browser deduplication. The source-geometry
+EPSG:2263 analytical output is not rounded.
+The compressed web assets are 44.6 MiB total, down from 120.9 MiB in the
+whole-polygon export; the optional ownership tiles account for 36.6 MiB.
+Tiles are gzip files decoded with the browser's `DecompressionStream`, checked
+against catalog byte counts and SHA256 hashes before use. Errors clear imported
+overlays and offer Retry; no stale partial overlay is presented as success.
+Canvas renderers are reused rather than accumulated when panning.
+
+Click a feature for its category and selected source attributes (parcel BBL,
+address, land use, owner type, historic designation, zoning/version; source
+identifiers, names/jurisdiction/agency where supplied by other layers). Owner
+names are not published. Geometry is WGS84 for display; the companion pipeline
+keeps source-geometry EPSG:2263 GeoParquet and a source-hashed manifest/profiles. Thirteen invalid
+parking polygons were repaired with `make_valid`; no features were dropped.
+The source GeoPackage is read-only and its hash is checked before/after export.
+The exporter is `01_sites/export_explore_web.py` in the companion POSTGIS folder,
+configured under `datasets.explore_gpkg`. Existing outputs are immutable.
+
 ## Income mode
 
 Select **Income**, choose an area scale, then click a polygon or use the

@@ -133,6 +133,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .origin-button:hover, .origin-button:focus-visible { color: #fff; background: #000; border-color: #000; }
 .section-note { margin: 11px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .layer-row { min-height: 42px; display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--line); }
+.explore-layer { padding: 12px 0; border-top: 1px solid var(--line); }
+.explore-filter-heading { display: flex; align-items: center; gap: 8px; }
+.explore-filter-toggle { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; padding: 0; border: 0; background: none; color: var(--muted); text-align: left; text-transform: uppercase; font-size: 11px; font-weight: 600; }
+.explore-filter-toggle:hover { color: var(--ink); }
+.explore-filter-toggle > span:first-child { width: 12px; flex: none; }
+.explore-filter-content { padding: 10px 0 0 18px; }
+.explore-check { display: flex; align-items: flex-start; gap: 5px; font-size: 11px; line-height: 1.5; cursor: pointer; }
+.explore-check input { flex: none; margin: 2px 0 0; accent-color: var(--blue); }
+.explore-category { display: flex; gap: 6px; align-items: flex-start; margin: 8px 0; }
+.explore-swatch { display: block; width: 10px; height: 10px; flex: none; margin-top: 3px; border: 1px solid rgb(0 0 0 / 20%); }
+#explore-state { font-size: 11px; line-height: 1.5; }
+.explore-popup h2 { font-size: 16px; }
+.explore-popup dl { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; }
+.explore-popup dd { margin: 0; overflow-wrap: anywhere; }
+body[data-mode="exploration"] .layer-section { display: block; }
+body[data-mode="exploration"] .layer-section > .section-note { display: block; }
 .layer-symbol { width: 13px; height: 13px; flex: 0 0 13px; }
 .boundary-symbol { border: 1px dashed var(--blue); }
 .place-symbol { border: 1px solid var(--accent); background: var(--map-building-fill); }
