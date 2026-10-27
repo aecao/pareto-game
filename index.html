@@ -212,14 +212,25 @@
         <section class="panel-section income-only" hidden aria-label="Income sources">
           <span class="eyebrow">INCOME / ACS 2024</span>
           <h1>Income</h1>
-          <p class="section-note">Individual income for people age 15+, not household income. 2020–2024 ACS five-year estimates in 2024 dollars.</p>
-          <label for="income-tract">Open a census tract</label>
-          <select id="income-tract" disabled><option value="">Load Income first</option></select>
-          <p id="income-state" role="status" aria-live="polite">Open Income to load tract data.</p>
+          <p class="section-note">Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
+          <label for="income-scale">Selectable area scale</label>
+          <select id="income-scale">
+            <option value="block_group">Block group</option>
+            <option value="tract">Census tract</option>
+            <option value="neighborhood">Neighborhood (NTA)</option>
+            <option value="community_district">Community district (CDTA approximation)</option>
+            <option value="borough">Borough</option>
+          </select>
+          <label id="income-area-label" for="income-block-group">Open a block group</label>
+          <select id="income-block-group" disabled><option value="">Load Income first</option></select>
+          <p id="income-state" role="status" aria-live="polite">Open Income to load block-group data.</p>
           <button id="income-retry" class="secondary-button" type="button" hidden>Retry Income</button>
-          <p class="section-note">Queens CD1/CD2 and Manhattan CD6/CD8. Whole tracts qualify with at least 1% area in any requested district. Counts are not clipped or allocated to districts.</p>
-          <p class="section-note">Blue fill: at least 99% inside the district union. Tan dashed fill: partial overlap. Black dashed outlines: DCP community districts (26b). Area includes water.</p>
-          <p class="section-note"><a href="https://data.census.gov/table/ACSDT5Y2024.B06010">ACS B06010 source</a> · <a href="assets/income/tracts.json" download>Download tract snapshot</a></p>
+          <p class="section-note">Choose a scale, then click a polygon or select an area. Larger areas sum whole block groups. Home fits all of NYC.</p>
+          <p class="section-note">Neighborhoods use 2020 NTAs; districts use CDTAs, census approximations rather than exact community-district boundaries. Special areas and Joint Interest Areas are included. Boundaries are unions of 2024 block-group polygons using the supplied 2020 tract relationships; NTAs/CDTAs may cross borough lines.</p>
+          <p class="section-note">Sixteen income bands; the highest is $200,000 or more. Block-group 90% margins of error are original; larger-area MOEs are approximate (root-sum-of-squares, rounded up). Small-area estimates can be uncertain; zero estimates remain zero.</p>
+          <p class="section-note">Grey: no estimated households. Blue: positive estimated household total. Reported zeros are not missing data; grey areas remain clickable.</p>
+          <p class="section-note">IPUMS NHGIS, University of Minnesota, <a href="https://www.nhgis.org/">www.nhgis.org</a>. Version 21.0 (2026). <a href="https://doi.org/10.18128/D050.V21.0">Citation</a>.</p>
+          <p class="section-note"><a href="https://data.census.gov/table/ACSDT5Y2024.B19001">ACS B19001 definition</a> · <a href="assets/income/block-groups.json" download>Download NYC block-group snapshot</a></p>
         </section>
         <div class="sidebar-footer exploration-only">
           <span class="footer-rule"></span>
@@ -440,7 +451,7 @@
     <script src="far.js"></script>
     <script src="housing-model.js"></script>
     <script src="housing.js"></script>
-    <script src="income-model.js"></script>
-    <script src="income.js"></script>
+    <script src="income-model.js?v=income-scales-v2"></script>
+    <script src="income.js?v=income-scales-v2"></script>
   </body>
 </html>

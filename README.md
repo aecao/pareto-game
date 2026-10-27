@@ -4,39 +4,77 @@ A static Roosevelt Island mapping study, designed for GitHub Pages.
 
 ## Income mode
 
-Select **Income**, then click a tract polygon or use the keyboard-accessible
-tract selector. Each popup plots income bands on x and estimated people age 15+
-on y, with exact counts and each category's own 90% margin of error in a table.
-Hover bars for counts/MOEs; the chart scrolls horizontally on small screens.
-Home resets to the full tract extent. Failed loads clear the layer and offer Retry.
+Select **Income**, choose an area scale, then click a polygon or use the
+keyboard-accessible area selector. Scales are **block group** (default),
+**census tract**, **neighborhood (NTA)**, **community district (CDTA approximation)**,
+and **borough**. Home fits all of NYC. Scale changes replace both the selectable
+polygons and popup statistics; snapshots load on demand and are cached in memory.
+Canvas-rendered polygons keep the citywide view lightweight; charts are generated
+only when an area is opened. Failed loads clear the layer and offer Retry.
 
-The fixed [snapshot](assets/income/tracts.json) contains **183 unique whole tracts**:
-Manhattan CD6 28 memberships, CD8 42; Queens CD1 66, CD2 50. Memberships overlap,
-so those counts must not be added as unique tracts. **42 tracts** are flagged
-partial; nine have zero estimated population 15+ (zero-height bars).
+The supplied `nyc2020census_tract_nta_cdta_relationships.xlsx` maps every source
+block group via its 11-digit tract GEOID: **2,327 tracts**, **262 NTAs**, **71 CDTAs**
+and **5 boroughs**. Special-area NTAs and Joint Interest Areas are retained.
+CDTAs approximate community districts; they are not exact legal boundaries.
+NTAs/CDTAs may cross borough boundaries, while borough totals use the original
+county. Aggregate polygons are unions of 2024 TIGER block groups assigned through
+the 2020 crosswalk, not official NTA/CD boundary files.
+Every scale includes all 6,807 source block groups and **3,334,088 estimated
+households**, with no clipping, weighting or unmatched records.
 
-Source: [2020–2024 ACS five-year B06010](https://data.census.gov/table/ACSDT5Y2024.B06010),
-individual past-12-month income in **2024 inflation-adjusted dollars**, not
-household income. "No income" is separate from "$1 to $9,999 or loss";
-"With income" is a subtotal, not another bar; "$75,000 or more" is open-ended.
-These are categorical bands with unequal income widths, not a continuous
-histogram or a claim that the highest incomes stop at $75,000.
+The [NYC snapshot](assets/income/block-groups.json) contains Bronx **1,182**,
+Brooklyn **2,156**, Manhattan **1,292**, Queens **1,803**, and Staten Island **374**
+block groups. All records match 2024 TIGER/Line boundaries one-to-one; nothing is
+clipped or allocated to districts. **442** block groups have zero estimated
+households; their bars stay at zero, with the original nonzero MOEs retained.
+These 442 zero-household block groups have grey fill and outlines, with a
+"No estimated households" tooltip/popup notice. Positive-total groups remain
+blue, even when individual income bands are zero. Grey is not a missing-data
+claim; all groups remain clickable and their source estimates are preserved.
 
-2024 TIGER/Line tracts qualify when at least **1% of their area** intersects
-any requested same-borough community district (NYC DCP **26b** boundaries).
-Full tract shapes and full tract counts are retained, never population-clipped
-or allocated to districts. Area includes water and is not population weighted.
-Tan dashed tracts have less than **99%** area inside the actual district union;
-this flag uses a cartographic tolerance for tiny boundary seams. Black dashed
-lines show the community district boundaries. Exact per-district and union
-shares remain in the download. Sampling uncertainty can be large; MOEs are
-not summed or presented as percentage MOEs.
+Source: [2020–2024 ACS five-year B19001](https://data.census.gov/table/ACSDT5Y2024.B19001)
+via the supplied IPUMS NHGIS `nhgis0007` / `ds272` extract. This is **household
+income**, not the individual-income measure from the earlier tract page. The
+user approved the change of universe. Filled-line charts show dollar-value ticks
+on x and **number of households** on y, in **2024 inflation-adjusted dollars**.
+The first category is less than $10,000; the last is $200,000 or more (open-ended).
+The 16 source bins have unequal income widths. Closed bins sit at their midpoints
+on the dollar scale; the open-ended lowest and $200,000+ bins sit at the chart ends.
+Straight segments connect the counts for display: the fill is **not** a continuous
+income density or an estimate at an exact dollar amount. No smoothing or invented
+within-band estimates are used. Hover/focus points for original ranges and values;
+expand **Source ranges, estimates & uncertainty** for the table listing every exact
+count and its own **90% MOE in households**. Original block-group MOEs are preserved.
+At larger scales, estimates are sums and each MOE is an **approximation**:
+`ceil(sqrt(sum(source_moe ** 2)))`. Covariances are unavailable; these are not
+independently published tract/NTA/CDTA/borough ACS estimates. Popups explicitly
+label the approximation. MOEs are not arithmetically summed or converted to
+percentage MOEs. Small-area sampling uncertainty can be large.
 
-The companion POSTGIS exporter is `01_sites/export_income_web.py`, configured
-under `datasets.income_tracts`. It preserves all source estimates/MOEs, checks
-exact ACS/TIGER county keys and bin totals, and produces EPSG:2263 GeoParquet,
-source hashes, validation accounting and WGS84 web JSON. Analytical/export
-outputs are immutable: archive reviewed outputs explicitly before regeneration.
+On desktop the complete chart scales to the popup width without horizontal
+scrolling; the source table is collapsed initially to keep the plot visible.
+On narrow/mobile screens the plot can scroll horizontally to retain readable axes.
+
+Citation: **IPUMS NHGIS, University of Minnesota, www.nhgis.org.**
+Jonathan Schroeder et al. *IPUMS National Historical Geographic Information
+System: Version 21.0* [dataset]. Minneapolis, MN: IPUMS. 2026.
+[doi:10.18128/D050.V21.0](https://doi.org/10.18128/D050.V21.0).
+The user confirmed NHGIS redistribution permission on 2026-10-27. The complete
+supplied statewide table is imported locally, not bundled with the web app.
+
+The companion exporter is `01_sites/export_income_block_groups.py`, configured
+under `datasets.income_block_groups`. It preserves all **496 columns** and
+**16,031 data rows** in a local Parquet import, explicitly excludes the single
+descriptive header row, then exports all NYC household-income records. It
+checks all 34 estimate/MOE fields, exact NHGIS/TIGER keys and band totals, and
+produces EPSG:2263 GeoParquet, source hashes, validation logs and WGS84 web JSON.
+Outputs are immutable; archive reviewed outputs explicitly before regeneration.
+The aggregate exporter is `01_sites/export_income_geographies.py`, configured
+under `datasets.income_geographies`, writing [scale snapshots](assets/income/geographies/)
+and EPSG:2263 GeoParquet. It checks unique crosswalk keys, complete membership,
+exact income-band totals, valid dissolved polygons and unchanged citywide totals.
+The old B06010 individual-income tract snapshot remains historical only and is
+not loaded by Income; the new tract scale aggregates B19001 household income.
 No live Census API key or database is required by the static app.
 
 ## Visual style

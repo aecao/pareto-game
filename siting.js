@@ -297,7 +297,7 @@ function setStudyMode(mode) {
   document.querySelectorAll(".income-only").forEach((element) => { element.hidden = !isIncome; });
   document.querySelectorAll(".map-only").forEach((element) => { element.hidden = isMarket || isHousing; });
   document.querySelector(".map-shell").setAttribute("aria-label", isIncome
-    ? "Interactive income tract map of Manhattan CD6/CD8 and Queens CD1/CD2" : "Interactive map of Roosevelt Island");
+    ? "Interactive household income map of NYC at the selected area scale" : "Interactive map of Roosevelt Island");
   document.querySelectorAll(".exploration-only").forEach((element) => { element.hidden = mode !== "exploration"; });
   map.closePopup();
   map.removeLayer(sitingGroup);

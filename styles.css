@@ -50,17 +50,23 @@
 .income-popup-content { display: grid; gap: 8px; }
 .income-popup-content p { margin: 0; font-size: 12px; line-height: 1.5; }
 .income-popup-content h2 { margin: 0; font-size: 20px; }
-.income-chart-scroll { overflow-x: auto; max-width: 100%; }
-.income-popup-content svg { display: block; width: 790px; height: auto; border: 1px solid var(--line); background: #fff; }
+.income-chart { overflow-x: auto; max-width: 100%; }
+.income-popup-content svg { display: block; width: 100%; height: auto; background: #fff; }
 .income-popup-content svg text { font-size: 12px; fill: var(--ink); }
+.income-popup-content svg .income-axis-title { font-weight: 600; }
+.income-grid-line { stroke: #e6e9f0; stroke-width: 1; }
+.income-area-fill, .income-area-line { pointer-events: none; }
+.income-data-details summary { font-size: 12px; cursor: pointer; font-weight: 600; }
+.income-data-details > p { margin: 8px 0; }
 .income-popup .leaflet-popup-content { max-width: calc(100vw - 90px); }
-.income-popup rect:focus-visible { outline: 2px solid var(--ink); }
+.income-popup circle:focus-visible { outline: 2px solid var(--ink); }
 .income-only select { width: 100%; margin-top: 8px; font-size: 12px; }
 .is-income .map-title, .is-income .map-caption { display: none; }
 .income-popup-table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .income-popup-table th, .income-popup-table td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: left; }
 .income-popup-table thead th { background: #f5f5f5; }
 @media (max-width: 700px) {
+  .income-popup-content svg { width: 640px; min-width: 100%; }
   body:has(.workspace.is-income) { overflow-y: auto; }
   .workspace.is-income { display: flex; flex-direction: column; height: auto; }
   .is-income .sidebar { position: static; width: auto; max-height: none; flex: none; }
