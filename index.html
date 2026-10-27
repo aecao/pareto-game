@@ -217,16 +217,16 @@
           <select id="income-scale">
             <option value="block_group">Block group</option>
             <option value="tract">Census tract</option>
-            <option value="neighborhood">Neighborhood (NTA)</option>
+            <option value="neighborhood" selected>Neighborhood (NTA)</option>
             <option value="community_district">Community district (CDTA approximation)</option>
             <option value="borough">Borough</option>
           </select>
-          <label id="income-area-label" for="income-block-group">Open a block group</label>
+          <label id="income-area-label" for="income-block-group">Open a neighborhood</label>
           <select id="income-block-group" disabled><option value="">Load Income first</option></select>
-          <p id="income-state" role="status" aria-live="polite">Open Income to load block-group data.</p>
+          <p id="income-state" role="status" aria-live="polite">Open Income to load neighborhood data.</p>
           <button id="income-retry" class="secondary-button" type="button" hidden>Retry Income</button>
-          <p class="section-note">Choose a scale, then click a polygon or select an area. Larger areas sum whole block groups. Home fits all of NYC.</p>
-          <p class="section-note">Neighborhoods use 2020 NTAs; districts use CDTAs, census approximations rather than exact community-district boundaries. Special areas and Joint Interest Areas are included. Boundaries are unions of 2024 block-group polygons using the supplied 2020 tract relationships; NTAs/CDTAs may cross borough lines.</p>
+          <p class="section-note">Choose a scale, then click a polygon or select an area. Neighborhoods are the default; their charts include an orange Roosevelt Island reference on the same household-count axis. Larger areas sum whole block groups. Home fits all of NYC.</p>
+          <p class="section-note">Neighborhoods use 2020 NTAs, except Roosevelt Island (tracts 238.02, 238.03 and 238.04), shown separately from Upper East Side-Lenox Hill as a custom split. Districts use CDTAs, census approximations rather than exact community-district boundaries. Special areas and Joint Interest Areas are included. Boundaries are unions of 2024 block-group polygons using the supplied 2020 tract relationships; NTAs/CDTAs may cross borough lines.</p>
           <p class="section-note">Sixteen income bands; the highest is $200,000 or more. Block-group 90% margins of error are original; larger-area MOEs are approximate (root-sum-of-squares, rounded up). Small-area estimates can be uncertain; zero estimates remain zero.</p>
           <p class="section-note">Grey: no estimated households. Blue: positive estimated household total. Reported zeros are not missing data; grey areas remain clickable.</p>
           <p class="section-note">IPUMS NHGIS, University of Minnesota, <a href="https://www.nhgis.org/">www.nhgis.org</a>. Version 21.0 (2026). <a href="https://doi.org/10.18128/D050.V21.0">Citation</a>.</p>
@@ -451,7 +451,7 @@
     <script src="far.js"></script>
     <script src="housing-model.js"></script>
     <script src="housing.js"></script>
-    <script src="income-model.js?v=income-scales-v2"></script>
-    <script src="income.js?v=income-scales-v2"></script>
+    <script src="income-model.js?v=income-scales-v4"></script>
+    <script src="income.js?v=income-scales-v4"></script>
   </body>
 </html>

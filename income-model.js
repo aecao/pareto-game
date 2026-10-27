@@ -81,18 +81,23 @@
     };
   }
 
-  function areaLayout(bins) {
-    const layout = chartLayout(bins, 205);
+  function areaLayout(bins, referenceBins = null) {
+    chartLayout(bins, 205);
+    if (referenceBins) chartLayout(referenceBins, 205);
+    const scaleBins = referenceBins
+      ? bins.map((bin, i) => ({ estimate: Math.max(bin.estimate, referenceBins[i].estimate) }))
+      : bins;
+    const layout = chartLayout(scaleBins, 205);
     // Verified B19001 breakpoints. Closed bins sit at their midpoints; open tails sit at the chart ends.
     const breaks = [0, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000,
       50000, 60000, 75000, 100000, 125000, 150000, 200000];
     const points = bins.map((bin, i) => {
       const income = i === 0 ? 0 : i === bins.length - 1 ? 200000 : (breaks[i] + breaks[i + 1]) / 2;
-      return { income, x: 76 + income / 200000 * 688, y: 242 - layout.heights[i] };
+      return { income, x: 76 + income / 200000 * 688, y: 242 - bin.estimate / layout.ceiling * 205 };
     });
     const line = points.map((point, i) => `${i ? "L" : "M"}${point.x},${point.y}`).join(" ");
     return {
-      ...layout, points, line,
+      ...layout, heights: bins.map((bin) => bin.estimate / layout.ceiling * 205), points, line,
       area: `${line} L${points.at(-1).x},242 L${points[0].x},242 Z`,
       incomeTicks: [0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000],
     };
@@ -111,7 +116,7 @@
     }
     const keys = {
       tract: /^36(005|047|061|081|085)\d{6}$/,
-      neighborhood: /^(BX|BK|MN|QN|SI)\d{4}$/,
+      neighborhood: /^(?:(BX|BK|MN|QN|SI)\d{4}|MN0801-RI)$/,
       community_district: /^(BX|BK|MN|QN|SI)\d{2}$/,
       borough: /^(005|047|061|081|085)$/,
     };

@@ -56,6 +56,10 @@
 .income-popup-content svg .income-axis-title { font-weight: 600; }
 .income-grid-line { stroke: #e6e9f0; stroke-width: 1; }
 .income-area-fill, .income-area-line { pointer-events: none; }
+.income-chart-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 4px 0 6px; font-size: 12px; }
+.income-chart-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.income-legend-selected, .income-legend-reference { display: inline-block; width: 18px; height: 9px; background: rgb(0 53 255 / 55%); border-top: 2px solid #0035ff; }
+.income-legend-reference { background: rgb(232 111 22 / 55%); border-top: 2px dashed #E86F16; }
 .income-data-details summary { font-size: 12px; cursor: pointer; font-weight: 600; }
 .income-data-details > p { margin: 8px 0; }
 .income-popup .leaflet-popup-content { max-width: calc(100vw - 90px); }

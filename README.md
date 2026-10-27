@@ -5,16 +5,21 @@ A static Roosevelt Island mapping study, designed for GitHub Pages.
 ## Income mode
 
 Select **Income**, choose an area scale, then click a polygon or use the
-keyboard-accessible area selector. Scales are **block group** (default),
-**census tract**, **neighborhood (NTA)**, **community district (CDTA approximation)**,
+keyboard-accessible area selector. Scales are **block group**,
+**census tract**, **neighborhood (NTA)** (default), **community district (CDTA approximation)**,
 and **borough**. Home fits all of NYC. Scale changes replace both the selectable
 polygons and popup statistics; snapshots load on demand and are cached in memory.
 Canvas-rendered polygons keep the citywide view lightweight; charts are generated
 only when an area is opened. Failed loads clear the layer and offer Retry.
 
 The supplied `nyc2020census_tract_nta_cdta_relationships.xlsx` maps every source
-block group via its 11-digit tract GEOID: **2,327 tracts**, **262 NTAs**, **71 CDTAs**
+block group via its 11-digit tract GEOID: **2,327 tracts**, **263 neighborhood areas**, **71 CDTAs**
 and **5 boroughs**. Special-area NTAs and Joint Interest Areas are retained.
+Neighborhoods use the 262 official NTAs with one user-specified split:
+Roosevelt Island (tract GEOIDs `36061023802`, `36061023803`, `36061023804`;
+display ID `MN0801-RI`) is separate from the remainder of `MN0801`, renamed
+Upper East Side-Lenox Hill. These two display areas are labeled as custom, not
+official NTAs. The split changes no tract, CDTA or borough assignments.
 CDTAs approximate community districts; they are not exact legal boundaries.
 NTAs/CDTAs may cross borough boundaries, while borough totals use the original
 county. Aggregate polygons are unions of 2024 TIGER block groups assigned through
@@ -54,6 +59,12 @@ percentage MOEs. Small-area sampling uncertainty can be large.
 On desktop the complete chart scales to the popup width without horizontal
 scrolling; the source table is collapsed initially to keep the plot visible.
 On narrow/mobile screens the plot can scroll horizontally to retain readable axes.
+All series use darker, uniform fills (55% opacity), not gradients. Other
+neighborhood charts overlay Roosevelt Island in orange with a dashed outline;
+the selected neighborhood is blue. Both share the same absolute household-count
+axis, scaled to the larger series; they are not normalized to percentages.
+The legend, point hover/focus text and expanded uncertainty table identify both
+series. Roosevelt Island's own chart and non-neighborhood scales remain single-series.
 
 Citation: **IPUMS NHGIS, University of Minnesota, www.nhgis.org.**
 Jonathan Schroeder et al. *IPUMS National Historical Geographic Information

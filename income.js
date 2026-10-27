@@ -20,12 +20,13 @@ function incomeNode(tag, text, parent, attributes = {}) {
   return node;
 }
 
-function incomePopup(feature) {
+function incomePopup(feature, reference = null) {
   const p = feature.properties;
   const wrapper = incomeNode("div", null, null, { class: "income-popup-content" });
   const aggregated = Boolean(p.scale);
   const name = aggregated ? p.name : `${p.borough}: Block Group ${p.block_group}, Tract ${p.tract}`;
   const moeLabel = aggregated ? "approximate 90% MOE" : "90% MOE";
+  const overlay = p.scale === "neighborhood" && p.geoid !== "MN0801-RI" ? reference : null;
   incomeNode("h2", name, wrapper);
   incomeNode("p", `${aggregated ? IncomeModel.scales[p.scale].label : "GEOID"} ${p.geoid}`, wrapper);
   incomeNode("p", `Households: ${incomeNumber(p.total)} +/- ${incomeNumber(p.total_moe)} (${moeLabel})`, wrapper);
@@ -37,30 +38,44 @@ function incomePopup(feature) {
     viewBox: "0 0 800 315", role: "img", "aria-label": `Household income distribution for ${name}`,
   });
   incomeNode("title", `Annual household income (x) and number of households in each source income band (y), ${p.name}`, svg);
-  const layout = IncomeModel.areaLayout(p.bins);
-  const gradientId = `income-fill-${p.geoid}`;
-  const gradient = incomeNode("linearGradient", null, incomeNode("defs", null, svg), {
-    id: gradientId, x1: "0", y1: "0", x2: "0", y2: "1",
-  });
-  incomeNode("stop", null, gradient, { offset: "0%", "stop-color": "#0035ff", "stop-opacity": "0.38" });
-  incomeNode("stop", null, gradient, { offset: "100%", "stop-color": "#0035ff", "stop-opacity": "0.04" });
+  const layout = IncomeModel.areaLayout(p.bins, overlay?.bins);
   incomeNode("text", "Number of households", svg, { x: 76, y: 20, class: "income-axis-title" });
   for (const value of layout.ticks) {
     const y = 242 - value / layout.ceiling * 205;
     incomeNode("line", null, svg, { x1: 76, x2: 764, y1: y, y2: y, class: "income-grid-line" });
     incomeNode("text", incomeNumber(value), svg, { x: 64, y: y + 4, "text-anchor": "end" });
   }
-  incomeNode("path", null, svg, { d: layout.area, fill: `url(#${gradientId})`, class: "income-area-fill" });
-  incomeNode("path", null, svg, { d: layout.line, fill: "none", stroke: "#0035ff", "stroke-width": 2.5,
-    "stroke-linejoin": "round", "stroke-linecap": "round", class: "income-area-line" });
-  p.bins.forEach((bin, index) => {
-    const point = layout.points[index];
-    const marker = incomeNode("circle", null, svg, {
-      cx: point.x, cy: point.y, r: 4, fill: "#fff", stroke: "#0035ff", "stroke-width": 2,
-      tabindex: "0", "aria-label": `${bin.label}: ${incomeNumber(bin.estimate)} +/- ${incomeNumber(bin.moe)} households`,
+  const series = [{ data: p, color: "#0035ff", layout }];
+  if (overlay) {
+    series.push({ data: overlay, color: "#E86F16", layout: IncomeModel.areaLayout(overlay.bins, p.bins) });
+  }
+  for (const item of series) {
+    incomeNode("path", null, svg, { d: item.layout.area, fill: item.color, "fill-opacity": 0.55,
+      class: "income-area-fill" });
+  }
+  for (const item of series) {
+    incomeNode("path", null, svg, { d: item.layout.line, fill: "none", stroke: item.color, "stroke-width": 2.5,
+      "stroke-linejoin": "round", "stroke-linecap": "round", class: "income-area-line",
+      "stroke-dasharray": item.data === overlay ? "6 3" : "none" });
+    item.data.bins.forEach((bin, index) => {
+      const point = item.layout.points[index];
+      const marker = incomeNode("circle", null, svg, {
+        cx: point.x, cy: point.y, r: 4, fill: "#fff", stroke: item.color, "stroke-width": 2,
+        tabindex: "0", "aria-label": `${item.data.name} — ${bin.label}: ${incomeNumber(bin.estimate)} +/- ${incomeNumber(bin.moe)} households`,
+      });
+      incomeNode("title", `${item.data.name} — ${bin.label}: ${incomeNumber(bin.estimate)} +/- ${incomeNumber(bin.moe)} (${item.data.scale ? "approximate 90% MOE" : "90% MOE"})`, marker);
     });
-    incomeNode("title", `${bin.label}: ${incomeNumber(bin.estimate)} +/- ${incomeNumber(bin.moe)} (${moeLabel})`, marker);
-  });
+  }
+  if (overlay) {
+    const legend = incomeNode("div", null, chart, { class: "income-chart-legend", "aria-label": "Chart series" });
+    for (const item of series) {
+      const label = incomeNode("span", null, legend);
+      incomeNode("span", null, label, { class: item.data === overlay ? "income-legend-reference" : "income-legend-selected",
+        "aria-hidden": "true" });
+      incomeNode("span", item.data.name, label);
+    }
+    incomeNode("p", "Both series show household counts on the same axis, not percentages. Roosevelt Island is the orange dashed reference.", chart);
+  }
   for (const value of layout.incomeTicks) {
     const x = 76 + value / 200000 * 688;
     incomeNode("line", null, svg, { x1: x, x2: x, y1: 242, y2: 248, stroke: "#aaa" });
@@ -78,19 +93,27 @@ function incomePopup(feature) {
     if (p.scale === "community_district") {
       incomeNode("p", "CDTA: a 2020 census approximation of a community district, not its exact legal boundary. Joint Interest Areas are retained.", details);
     } else if (p.scale === "neighborhood") {
-      incomeNode("p", "2020 Neighborhood Tabulation Area (NTA), including special areas; not an informal neighborhood boundary.", details);
+      incomeNode("p", p.custom_neighborhood
+        ? "Custom neighborhood split of NTA MN0801: Roosevelt Island is tracts 238.02, 238.03 and 238.04; Upper East Side-Lenox Hill is the remainder. Not an official NTA boundary."
+        : "2020 Neighborhood Tabulation Area (NTA), including special areas; not an informal neighborhood boundary.", details);
     }
   }
   const table = incomeNode("table", null, details, { class: "income-popup-table" });
   incomeNode("caption", `Estimates and ${aggregated ? "approximate " : ""}90% margins of error (households)`, table);
   const head = incomeNode("tr", null, incomeNode("thead", null, table));
-  ["Household income band", "Households", "+/- MOE"].forEach((label) => incomeNode("th", label, head, { scope: "col" }));
+  const headers = ["Household income band", "Households", "+/- MOE"];
+  if (overlay) headers.push("Roosevelt Island households", "RI +/- MOE (approx.)");
+  headers.forEach((label) => incomeNode("th", label, head, { scope: "col" }));
   const body = incomeNode("tbody", null, table);
-  for (const bin of p.bins) {
+  for (const [i, bin] of p.bins.entries()) {
     const row = incomeNode("tr", null, body);
     incomeNode("th", bin.label, row, { scope: "row" });
     incomeNode("td", incomeNumber(bin.estimate), row);
     incomeNode("td", incomeNumber(bin.moe), row);
+    if (overlay) {
+      incomeNode("td", incomeNumber(overlay.bins[i].estimate), row);
+      incomeNode("td", incomeNumber(overlay.bins[i].moe), row);
+    }
   }
   incomeNode("p", aggregated
     ? "Boundaries are unions of source block-group polygons. 2020 tract/NTA/CDTA relationships are used without clipping or allocating households. NTAs/CDTAs can cross borough lines; borough totals use the source county. ACS is a survey, not an exact census count."
@@ -144,7 +167,7 @@ async function loadIncome() {
   try {
     let data = incomeCache.get(scale);
     if (!data) {
-      const response = await fetch(`assets/income/${definition.file}?v=income-scales-v2`, {
+      const response = await fetch(`assets/income/${definition.file}?v=income-scales-v4`, {
         cache: "no-cache", signal: incomeController.signal,
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -152,6 +175,9 @@ async function loadIncome() {
       incomeCache.set(scale, data);
     }
     if (request !== incomeRequest) return;
+    const reference = scale === "neighborhood"
+      ? data.features.find((feature) => feature.properties.geoid === "MN0801-RI")?.properties : null;
+    if (scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
     L.geoJSON(data, {
       renderer: L.canvas({ padding: 0.3 }),
       style: incomeMapStyle,
@@ -163,7 +189,7 @@ async function loadIncome() {
           const options = layer.getPopup().options;
           options.minWidth = options.maxWidth = Math.min(820, Math.max(230, map.getSize().x - 70));
           options.maxHeight = Math.max(180, Math.min(620, map.getSize().y - 90));
-          return incomePopup(feature);
+          return incomePopup(feature, reference);
         }, {
           className: "income-popup",
         });

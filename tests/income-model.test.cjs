@@ -79,6 +79,13 @@ test("filled-line layout uses dollar spacing and preserves every source count wi
   assert.ok(layout.area.endsWith(" L764,242 L76,242 Z"));
   const zero = model.areaLayout(bins.map((bin) => ({ ...bin, estimate: 0 })));
   assert.ok(zero.points.every((point) => point.y === 242));
+  const reference = bins.map((bin) => ({ ...bin, estimate: bin.estimate * 5 }));
+  const chosenLayout = model.areaLayout(bins, reference);
+  const referenceLayout = model.areaLayout(reference, bins);
+  assert.equal(chosenLayout.ceiling, referenceLayout.ceiling);
+  assert.ok(referenceLayout.points.every((point, i) =>
+    Math.abs((242 - point.y) - (242 - chosenLayout.points[i].y) * 5) < 1e-10));
+  assert.ok(referenceLayout.points.every((point) => point.y >= 37 && point.y <= 242));
 });
 
 const aggregatePayloads = Object.fromEntries(
@@ -90,9 +97,10 @@ const aggregatePayloads = Object.fromEntries(
 test("all five scale options are available and aggregate snapshots retain every source household", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const select = html.match(/<select id="income-scale">([\s\S]*?)<\/select>/)[1];
+  assert.ok(select.includes('value="neighborhood" selected'));
   assert.deepEqual([...select.matchAll(/value="([^"]+)"/g)].map((match) => match[1]), Object.keys(model.scales));
   const original = new Map(payload.features.map((f) => [f.properties.geoid, f.properties]));
-  const expectedCounts = { tract: 2327, neighborhood: 262, community_district: 71, borough: 5 };
+  const expectedCounts = { tract: 2327, neighborhood: 263, community_district: 71, borough: 5 };
   for (const [scale, data] of Object.entries(aggregatePayloads)) {
     assert.equal(model.normalizeAreas(data, scale), data);
     assert.equal(data.features.length, expectedCounts[scale]);
@@ -108,6 +116,23 @@ test("all five scale options are available and aggregate snapshots retain every 
       });
     }
   }
+});
+
+test("Roosevelt Island is separated from MN0801 only at neighborhood scale", () => {
+  const features = aggregatePayloads.neighborhood.features;
+  const island = features.find((f) => f.properties.geoid === "MN0801-RI").properties;
+  const mainland = features.find((f) => f.properties.geoid === "MN0801").properties;
+  const tracts = ["36061023802", "36061023803", "36061023804"];
+  assert.equal(island.name, "Roosevelt Island");
+  assert.equal(mainland.name, "Upper East Side-Lenox Hill");
+  assert.equal(island.custom_neighborhood, true);
+  assert.equal(mainland.custom_neighborhood, true);
+  assert.equal(island.member_count, 11);
+  assert.equal(island.total, 5175);
+  assert.deepEqual([...new Set(island.members.map((id) => id.slice(0, 11)))].sort(), tracts);
+  assert.ok(mainland.members.every((id) => !tracts.includes(id.slice(0, 11))));
+  assert.ok(aggregatePayloads.community_district.features.find((f) => f.properties.geoid === "MN08")
+    .properties.members.some((id) => tracts.includes(id.slice(0, 11))));
 });
 
 test("invalid aggregate membership, scale, counts, MOE method and geometry fail explicitly", () => {
@@ -170,6 +195,10 @@ test("popup renders a filled line, dollar ticks and source-range details with ex
     assert.equal(points.length, 16);
     assert.equal(descendants(popup, "rect").length, 0);
     assert.equal(descendants(popup, "path").length, 2);
+    assert.equal(descendants(popup, "linearGradient").length, 0);
+    const fill = descendants(popup, "path").find((node) => node.attributes.class === "income-area-fill");
+    assert.equal(fill.attributes.fill, "#0035ff");
+    assert.equal(fill.attributes["fill-opacity"], "0.55");
     feature.properties.bins.forEach((bin, i) => {
       if (bin.estimate === 0) assert.equal(points[i].attributes.cy, "242");
       assert.ok(points[i].attributes["aria-label"].includes(bin.moe.toLocaleString("en-US")));
@@ -195,4 +224,23 @@ test("popup renders a filled line, dollar ticks and source-range details with ex
       assert.ok(descendants(popup, "p").some((node) => node.textContent.includes("not its exact legal boundary")));
     }
   }
+  const neighborhood = aggregatePayloads.neighborhood.features.find((f) => f.properties.geoid === "MN0801");
+  const reference = aggregatePayloads.neighborhood.features.find((f) => f.properties.geoid === "MN0801-RI");
+  const comparison = context.incomePopup(neighborhood, reference.properties);
+  assert.equal(descendants(comparison, "path").length, 4);
+  assert.equal(descendants(comparison, "circle").length, 32);
+  assert.equal(descendants(comparison, "linearGradient").length, 0);
+  const lines = descendants(comparison, "path").filter((node) => node.attributes.class === "income-area-line");
+  assert.equal(lines[1].attributes.stroke, "#E86F16");
+  assert.equal(lines[1].attributes["stroke-dasharray"], "6 3");
+  const markers = descendants(comparison, "circle");
+  const shared = model.areaLayout(neighborhood.properties.bins, reference.properties.bins);
+  const ri = model.areaLayout(reference.properties.bins, neighborhood.properties.bins);
+  for (let i = 0; i < 16; i++) {
+    assert.equal(markers[i].attributes.cy, String(shared.points[i].y));
+    assert.equal(markers[i + 16].attributes.cy, String(ri.points[i].y));
+  }
+  assert.equal(descendants(comparison, "tbody")[0].children[0].children.length, 5);
+  assert.equal(descendants(context.incomePopup(reference, reference.properties), "path").length, 2);
+  assert.equal(descendants(context.incomePopup(aggregatePayloads.borough.features[0], reference.properties), "path").length, 2);
 });
