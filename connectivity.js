@@ -3,6 +3,7 @@
 const connectivityGroup = L.featureGroup();
 const connectivityStreets = L.featureGroup().addTo(connectivityGroup);
 const connectivityLinks = L.featureGroup().addTo(connectivityGroup);
+const connectivityOriginMarkers = L.featureGroup().addTo(connectivityGroup);
 const connectivityFields = document.getElementById("connectivity-fields");
 const connectivityState = document.getElementById("connectivity-state");
 const connectivityError = document.getElementById("connectivity-error");
@@ -15,6 +16,65 @@ const CONNECTIVITY_BAND_MINUTES = 5;
 let connectivityData = null;
 let connectivityLoading = false;
 let connectivityBounds = null;
+let connectivityOrigins = [];
+let connectivityOriginId = "main_street";
+let connectivityOriginRenderer = null;
+
+function renderOriginMarkers() {
+  connectivityOriginMarkers.clearLayers();
+  const pane = { pane: "connectivityMarkers", renderer: connectivityOriginRenderer };
+  for (const origin of connectivityOrigins) {
+    const latlng = [origin.coordinates[1], origin.coordinates[0]];
+    const selected = origin.id === connectivityOriginId;
+    const marker = L.circleMarker(latlng, {
+      ...pane, radius: selected ? 6 : 5, color: selected ? "#fff" : "#111", weight: 2,
+      fillColor: selected ? "#111" : "#fff", fillOpacity: 1,
+    });
+    marker.bindTooltip(origin.name, selected
+      ? { permanent: true, direction: "right", offset: [14, 0], className: "connectivity-origin-label" }
+      : { direction: "top" });
+    marker.bindPopup(connectivityPopup(origin.name,
+      `${origin.provisional ? "Provisional marker; access not checked. " : ""}${origin.source}`));
+    marker.on("click", () => selectConnectivityOrigin(origin.id));
+    if (selected) {
+      L.circleMarker(latlng, { ...pane, radius: 13, color: "#fff", weight: 5, fill: false })
+        .addTo(connectivityOriginMarkers);
+      L.circleMarker(latlng, { ...pane, radius: 13, color: "#111", weight: 2, fill: false })
+        .addTo(connectivityOriginMarkers);
+    }
+    marker.addTo(connectivityOriginMarkers);
+  }
+}
+
+function selectConnectivityOrigin(id) {
+  const origin = connectivityOrigins.find((item) => item.id === id);
+  if (!origin) throw new Error(`Unknown Connectivity origin: ${id}`);
+  connectivityOriginId = id;
+  for (const button of document.querySelectorAll("#connectivity-origins button")) {
+    const active = button.dataset.origin === id;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+  document.getElementById("connectivity-origin-note").textContent = id === "main_street"
+    ? "Main Street: current validated walking origin."
+    : `${origin.name}: provisional location only. Isochrone not generated; access and street connections not validated.`;
+  renderOriginMarkers();
+  renderConnectivity();
+  map.panTo([origin.coordinates[1], origin.coordinates[0]]);
+}
+
+function buildOriginButtons() {
+  const group = document.getElementById("connectivity-origins");
+  group.replaceChildren();
+  for (const origin of connectivityOrigins) {
+    const button = connectivityNode("button", origin.name);
+    button.type = "button";
+    button.className = "origin-button";
+    button.dataset.origin = origin.id;
+    button.addEventListener("click", () => selectConnectivityOrigin(origin.id));
+    group.append(button);
+  }
+}
 
 function connectivityNode(tag, text) {
   const node = document.createElement(tag);
@@ -84,20 +144,21 @@ function renderConnectivity() {
   if (!connectivityData) return;
   const budget = Number(document.getElementById("connectivity-budget").value);
   document.getElementById("connectivity-budget-value").textContent = `${budget} min`;
-  const comparison = document.getElementById("connectivity-scenario").value;
   const active = selectedBridges();
   const scenario = ConnectivityModel.scenarioName(connectivityData, active);
+  const routed = connectivityOriginId === "main_street";
+  connectivityFields.disabled = !routed;
+  document.querySelector(".connectivity-legend").hidden = !routed;
   connectivityStreets.clearLayers();
   // Baseline is drawn last so it sits in front of the selected-bridge reach.
-  if (comparison !== "baseline" && scenario !== "baseline") {
+  if (routed && scenario !== "baseline") {
     drawReachable(scenario, budget, CONNECTIVITY_RAMPS.selected, "Reachable with selected bridges");
   }
-  if (comparison !== "selected") {
-    drawReachable("baseline", budget, CONNECTIVITY_RAMPS.baseline, "Baseline");
-  }
+  if (routed) drawReachable("baseline", budget, CONNECTIVITY_RAMPS.baseline, "Baseline");
   renderLegendRamps(budget);
   connectivityLinks.clearLayers();
   L.geoJSON(connectivityData.links, {
+    filter: (f) => routed || f.properties.kind !== "origin_access",
     style: (f) => {
       const on = f.properties.bridge === null || active.includes(f.properties.bridge);
       return {
@@ -111,6 +172,14 @@ function renderConnectivity() {
         `${f.properties.kind.replace("_", " ")}: ${f.properties.length_ft.toFixed(0)} ft / ${f.properties.minutes.toFixed(2)} min`));
     },
   }).addTo(connectivityLinks);
+  if (!routed) {
+    const origin = connectivityOrigins.find((item) => item.id === connectivityOriginId);
+    document.getElementById("connectivity-metrics").replaceChildren();
+    document.getElementById("connectivity-summary").textContent =
+      `${origin.name}: origin marker preview only. No reachability results generated.`;
+    connectivityState.textContent = "Alternate origin selected. Isochrone not generated.";
+    return;
+  }
   const base = ConnectivityModel.metrics(connectivityData, "baseline", budget);
   const chosen = ConnectivityModel.metrics(connectivityData, scenario, budget);
   const metrics = document.getElementById("connectivity-metrics");
@@ -153,9 +222,12 @@ async function loadConnectivity() {
   connectivityError.hidden = true;
   connectivityState.textContent = "Loading verified walking snapshot...";
   try {
-    const response = await fetch("assets/connectivity/walking.json?v=three-bridges-v7", { cache: "no-cache" });
+    const response = await fetch("assets/connectivity/walking.json?v=three-bridges-v9", { cache: "no-cache" });
     if (!response.ok) throw new Error(`Walking snapshot unavailable (${response.status}).`);
     const data = ConnectivityModel.validate(await response.json());
+    const originsResponse = await fetch("assets/connectivity/origins.json?v=three-bridges-v9", { cache: "no-cache" });
+    if (!originsResponse.ok) throw new Error(`Origin catalog unavailable (${originsResponse.status}).`);
+    connectivityOrigins = ConnectivityModel.validateOrigins(await originsResponse.json(), data).origins;
     connectivityData = data;
     buildBridgeToggles(data);
     const island = L.geoJSON(data.island, {
@@ -163,27 +235,22 @@ async function loadConnectivity() {
     }).addTo(connectivityGroup);
     // Streets are redrawn on every render, so markers need their own pane to stay in front.
     if (!map.getPane("connectivityMarkers")) map.createPane("connectivityMarkers").style.zIndex = 650;
+    connectivityOriginRenderer ??= L.svg({ pane: "connectivityMarkers" });
     const markerPane = { pane: "connectivityMarkers", renderer: L.svg({ pane: "connectivityMarkers" }) };
     const markers = L.geoJSON(data.markers, {
-      filter: (f) => f.properties.role === "origin" || f.properties.role === "island_stop",
+      filter: (f) => f.properties.role === "island_stop",
       pointToLayer: (f, latlng) => {
-        if (f.properties.role !== "origin") {
-          return L.circleMarker(latlng, {
-            ...markerPane, radius: 5, color: "#111", weight: 2, fillColor: "#fff", fillOpacity: 1,
-          });
-        }
-        return L.featureGroup([
-          L.circleMarker(latlng, { ...markerPane, radius: 13, color: "#fff", weight: 5, fill: false }),
-          L.circleMarker(latlng, { ...markerPane, radius: 13, color: "#111", weight: 2, fill: false }),
-          L.circleMarker(latlng, { ...markerPane, radius: 5, color: "#fff", weight: 2, fillColor: "#111", fillOpacity: 1 })
-            .bindTooltip("Origin", { permanent: true, direction: "right", offset: [14, 0], className: "connectivity-origin-label" }),
-        ]);
+        return L.circleMarker(latlng, {
+          ...markerPane, radius: 5, color: "#111", weight: 2, fillColor: "#fff", fillOpacity: 1,
+        });
       },
       onEachFeature(f, layer) {
         if (f.properties.role !== "origin") layer.bindTooltip(f.properties.name);
       },
     }).addTo(connectivityGroup);
-    connectivityBounds = L.featureGroup([island, markers, L.geoJSON(data.links)]).getBounds().pad(0.6);
+    buildOriginButtons();
+    selectConnectivityOrigin("main_street");
+    connectivityBounds = L.featureGroup([island, markers, connectivityOriginMarkers, L.geoJSON(data.links)]).getBounds().pad(0.6);
     document.getElementById("connectivity-provenance").textContent =
       `LION ${data.provenance.lion} / ${data.provenance.source_edges.toLocaleString("en-US")} source edges; ${data.settings.walking_speed_mph} mph. ${Object.keys(data.scenarios).length} precomputed bridge combinations.`;
     connectivityFields.disabled = false;
@@ -196,8 +263,13 @@ async function loadConnectivity() {
     connectivityGroup.clearLayers();
     connectivityStreets.clearLayers();
     connectivityLinks.clearLayers();
+    connectivityOriginMarkers.clearLayers();
     connectivityStreets.addTo(connectivityGroup);
     connectivityLinks.addTo(connectivityGroup);
+    connectivityOriginMarkers.addTo(connectivityGroup);
+    connectivityOrigins = [];
+    document.getElementById("connectivity-origins").replaceChildren();
+    document.getElementById("connectivity-origin-note").textContent = "Origin locations unavailable. Retry loading Connectivity.";
     connectivityBridgeList.replaceChildren();
     connectivityData = null;
     connectivityBounds = null;
@@ -216,5 +288,4 @@ async function loadConnectivity() {
 }
 
 document.getElementById("connectivity-budget").addEventListener("input", renderConnectivity);
-document.getElementById("connectivity-scenario").addEventListener("change", renderConnectivity);
 connectivityRetry.addEventListener("click", loadConnectivity);

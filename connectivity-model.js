@@ -215,7 +215,27 @@
       row, queens, island, other, existingMiles, queensMiles,
     };
   }
+  function validateOrigins(catalog, data) {
+    requireValue(catalog?.schema_version === 1 && catalog.crs === "EPSG:4326"
+      && Array.isArray(catalog.origins) && catalog.origins.length === 8, "origin catalog");
+    const ids = new Set();
+    for (const origin of catalog.origins) {
+      requireValue(typeof origin?.id === "string" && !ids.has(origin.id)
+        && typeof origin.name === "string" && origin.name.length > 0
+        && typeof origin.source === "string" && origin.source.length > 0
+        && typeof origin.provisional === "boolean"
+        && Array.isArray(origin.coordinates) && origin.coordinates.length === 2
+        && origin.coordinates.every(finite) && origin.coordinates[0] > -74.1 && origin.coordinates[0] < -73.8
+        && origin.coordinates[1] > 40.7 && origin.coordinates[1] < 40.85, "origin marker");
+      ids.add(origin.id);
+    }
+    const main = catalog.origins.find((origin) => origin.id === "main_street");
+    const saved = data.markers.features.find((feature) => feature.properties.role === "origin").geometry.coordinates;
+    requireValue(main && main.coordinates.every((value, i) => value === saved[i]) && !main.provisional,
+      "Main Street origin differs from walking snapshot");
+    return catalog;
+  }
   return {
-    validate, scenarioName, trim, bands, reachable, bandedReachable, metrics, summaryRow, BUDGETS, MAX_BUDGET,
+    validate, validateOrigins, scenarioName, trim, bands, reachable, bandedReachable, metrics, summaryRow, BUDGETS, MAX_BUDGET,
   };
 }));

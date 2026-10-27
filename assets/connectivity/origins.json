@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "crs": "EPSG:4326",
+  "origins": [
+    {
+      "id": "main_street",
+      "name": "Main Street",
+      "coordinates": [
+        -73.94953203006646,
+        40.76218591878741
+      ],
+      "source": "Current validated walking snapshot origin",
+      "provisional": false
+    },
+    {
+      "id": "coler",
+      "name": "Coler",
+      "coordinates": [
+        -73.94219709162633,
+        40.77033062781594
+      ],
+      "source": "BIN 1040750 footprint centroid calculated in EPSG:2263",
+      "provisional": true
+    },
+    {
+      "id": "cornell_tech",
+      "name": "Cornell Tech",
+      "coordinates": [
+        -73.95549643260229,
+        40.755236876830175
+      ],
+      "source": "BIN 1089785 footprint centroid calculated in EPSG:2263",
+      "provisional": true
+    },
+    {
+      "id": "long_island_city",
+      "name": "Long Island City",
+      "coordinates": [
+        -73.9488,
+        40.74488
+      ],
+      "source": "NYC GeoSearch: 13-33 JACKSON AVENUE; fallback match, confidence 0.8; 2026-10-27",
+      "provisional": true
+    },
+    {
+      "id": "queensbridge_houses",
+      "name": "Queensbridge Houses",
+      "coordinates": [
+        -73.945384,
+        40.755299
+      ],
+      "source": "NYC GeoSearch: 10-18 41 AVENUE; fallback match, confidence 0.8; 2026-10-27",
+      "provisional": true
+    },
+    {
+      "id": "astoria_houses",
+      "name": "Astoria Houses",
+      "coordinates": [
+        -73.932879,
+        40.773078
+      ],
+      "source": "NYC GeoSearch: 4-25 ASTORIA BOULEVARD; fallback match, confidence 0.8; 2026-10-27",
+      "provisional": true
+    },
+    {
+      "id": "ravenswood_houses",
+      "name": "Ravenswood Houses",
+      "coordinates": [
+        -73.936833,
+        40.762726
+      ],
+      "source": "NYC GeoSearch: 34-35 12 STREET; fallback match, confidence 0.8; 2026-10-27",
+      "provisional": true
+    },
+    {
+      "id": "east_river_esplanade",
+      "name": "East River Esplanade",
+      "coordinates": [
+        -73.961427,
+        40.7550331
+      ],
+      "source": "USER: riverfront near East 54th Street; provisional EAST MIDTOWN GREENWAY vertex from walking snapshot",
+      "provisional": true
+    }
+  ]
+}

@@ -110,6 +110,32 @@ ranking controls can be used together.
 
 ## Connectivity mode
 
+The former Map Style selector has been removed in every mode; the light basemap
+remains. In Connectivity, its place is an eight-button **Origin** selector:
+Main Street (default), Coler, Cornell Tech, Long Island City, Queensbridge Houses,
+Astoria Houses, Ravenswood Houses, and East River Esplanade.
+All eight markers are shown. Selecting an alternate origin hides Main Street's
+isochrones, metrics and origin connector, while retaining proposed bridge geometry.
+Walking controls are disabled until Main Street is selected again; its existing
+budget and bridge choices are preserved. No new isochrones have been generated.
+
+Alternate locations are provisional, not verified entrances or snapped routing
+nodes. Coler (BIN 1040750) and Cornell Tech (BIN 1089785) use footprint centroids
+calculated in EPSG:2263, then transformed to EPSG:4326. Queens markers use the
+user-supplied addresses matched by NYC GeoSearch (fallback, confidence 0.8).
+East River Esplanade uses an East Midtown Greenway vertex near East 54th Street.
+Marker popups expose the placement source. Main Street retains the exact current
+snapshot origin, rather than a new address geocode.
+The source definitions live in the companion POSTGIS `config.yaml`, under
+`walking_bridge.origins`; run `01_sites/export_connectivity_origins.py` to
+refresh `assets/connectivity/origins.json`. This exports only markers and checks
+that Main Street agrees exactly with the existing walking snapshot.
+
+Travel-mode buttons above the bridge toggles show **Walking** selected and
+**Biking** disabled (isochrones not available yet). No biking routing is generated.
+The map always compares baseline reach with the selected bridges; there is no
+map-comparison dropdown. Baseline remains drawn in front of selected-bridge reach.
+
 Select **Connectivity** for the first walking-only bridge prototype:
 `Q00313_4003130001` (two-lot Queens assemblage at Costco Esplanade) from an
 assumed access point on Roosevelt Island. Explore and Siting remain unchanged

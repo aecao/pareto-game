@@ -4,6 +4,98 @@ const model = require("../connectivity-model.js");
 const data = require("../assets/connectivity/walking.json");
 const fs = require("node:fs");
 const path = require("node:path");
+const origins = require("../assets/connectivity/origins.json");
+
+test("origin catalog has eight sourced locations and preserves the exact Main Street origin", () => {
+  assert.equal(model.validateOrigins(origins, data), origins);
+  assert.deepEqual(origins.origins.map((origin) => origin.name), [
+    "Main Street", "Coler", "Cornell Tech", "Long Island City", "Queensbridge Houses",
+    "Astoria Houses", "Ravenswood Houses", "East River Esplanade",
+  ]);
+  assert.ok(origins.origins.slice(1).every((origin) => origin.provisional));
+  assert.deepEqual(origins.origins.find((origin) => origin.id === "east_river_esplanade").coordinates,
+    [-73.961427, 40.7550331]);
+});
+
+for (const [label, corrupt] of [
+  ["count", (d) => d.origins.pop()],
+  ["duplicate", (d) => { d.origins[1].id = d.origins[0].id; }],
+  ["coordinate", (d) => { d.origins[1].coordinates = [0, 0]; }],
+  ["source", (d) => { d.origins[1].source = ""; }],
+  ["Main Street", (d) => { d.origins[0].coordinates[0] += 0.00001; }],
+]) {
+  test(`reject invalid origin catalog: ${label}`, () => {
+    const invalid = structuredClone(origins);
+    corrupt(invalid);
+    assert.throws(() => model.validateOrigins(invalid, data), /origin|Main Street/);
+  });
+}
+
+test("origin controls replace map style and load the same released origin catalog", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const renderer = fs.readFileSync(path.join(__dirname, "../connectivity.js"), "utf8");
+  const version = html.match(/src="connectivity-model\.js\?v=([^"]+)"/)[1];
+  assert.ok(html.includes('class="panel-section connectivity-only" hidden aria-label="Connectivity origins"'));
+  assert.ok(!html.includes("data-style="));
+  assert.ok(!app.includes("streetLayer"));
+  assert.ok(renderer.includes(`fetch("assets/connectivity/origins.json?v=${version}"`));
+});
+
+test("alternate origins clear results and Main Street restores the selected scenario", () => {
+  const vm = require("node:vm");
+  const element = () => ({
+    children: [], value: "45", hidden: false, textContent: "",
+    append(...items) { this.children.push(...items); },
+    replaceChildren(...items) { this.children = items; },
+    addEventListener() {},
+    querySelectorAll() { return data.bridges.map((bridge) => ({ value: bridge.id })); },
+  });
+  const elements = new Map();
+  const get = (id) => {
+    if (!elements.has(id)) elements.set(id, element());
+    return elements.get(id);
+  };
+  const group = () => ({
+    layers: [], addTo() { return this; }, clearLayers() { this.layers = []; },
+  });
+  const context = vm.createContext({
+    ConnectivityModel: model,
+    document: { getElementById: get, querySelector: get, createElement: element },
+    L: {
+      featureGroup: group,
+      geoJSON(collection, options) {
+        return { addTo(target) { target.layers = collection.features.filter(options.filter); } };
+      },
+    },
+  });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, "../connectivity.js"), "utf8"), context);
+  context.testData = data;
+  context.testOrigins = origins.origins;
+  vm.runInContext(`
+    connectivityData = testData; connectivityOrigins = testOrigins;
+    renderLegendRamps = () => {};
+    drawReachable = (scenario) => connectivityStreets.layers.push(scenario);
+    renderConnectivity();
+  `, context);
+  const initialMetrics = JSON.stringify(get("connectivity-metrics").children);
+  for (const origin of origins.origins.slice(1)) {
+    context.testId = origin.id;
+    vm.runInContext("connectivityOriginId = testId; renderConnectivity();", context);
+    assert.equal(vm.runInContext("connectivityStreets.layers.length", context), 0);
+    assert.equal(get("connectivity-metrics").children.length, 0);
+    assert.ok(get("connectivity-fields").disabled);
+    assert.ok(get(".connectivity-legend").hidden);
+    assert.match(get("connectivity-state").textContent, /not generated/);
+    assert.equal(vm.runInContext('connectivityLinks.layers.some(f => f.properties.kind === "origin_access")', context), false);
+    assert.ok(vm.runInContext("connectivityLinks.layers.length", context) > 0);
+  }
+  vm.runInContext('connectivityOriginId = "main_street"; renderConnectivity();', context);
+  assert.equal(get("connectivity-fields").disabled, false);
+  assert.equal(get(".connectivity-legend").hidden, false);
+  assert.equal(vm.runInContext("connectivityStreets.layers.length", context), 2);
+  assert.equal(JSON.stringify(get("connectivity-metrics").children), initialMetrics);
+});
 
 test("Connectivity scripts, fetch and download share a cache-busting release", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
@@ -14,6 +106,16 @@ test("Connectivity scripts, fetch and download share a cache-busting release", (
   assert.ok(html.includes(`src="connectivity.js?v=${version}"`));
   assert.ok(html.includes(`href="assets/connectivity/walking.json?v=${version}"`));
   assert.ok(loader.includes(`fetch("assets/connectivity/walking.json?v=${version}", { cache: "no-cache" })`));
+});
+
+test("travel modes show walking and unavailable biking without a map comparison selector", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const renderer = fs.readFileSync(path.join(__dirname, "../connectivity.js"), "utf8");
+  assert.ok(html.includes('aria-pressed="true">Walking</button>'));
+  assert.ok(html.includes('disabled aria-describedby="connectivity-biking-note">Biking</button>'));
+  assert.ok(html.indexOf('aria-label="Travel mode"') < html.indexOf('id="connectivity-bridges"'));
+  assert.ok(!html.includes('id="connectivity-scenario"'));
+  assert.ok(!renderer.includes("connectivity-scenario"));
 });
 
 test("verified walking snapshot validates without mutation", () => {

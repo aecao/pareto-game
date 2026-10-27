@@ -127,13 +127,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .panel-section { padding: 22px 24px; border-bottom: 1px solid var(--line); }
 .section-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .section-index { color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
-.style-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.style-button { display: flex; gap: 7px; justify-content: center; align-items: center; padding: 8px 5px; border: 1px solid transparent; color: var(--ink); background: #fff; font-size: 12px; }
-.style-button.is-active { border-color: #000; }
-.style-button:hover, .style-button:focus-visible { color: #fff; background: #000; border-color: #000; }
-.style-swatch { width: 13px; height: 13px; border: 1px solid #aaa; }
-.swatch-light { background: linear-gradient(135deg, #fff 0 44%, #ccc 45% 51%, #f6f6f6 52%); }
-.swatch-street { background: linear-gradient(135deg, #edf0e8 0 40%, #f2d9a2 41% 49%, #dfe5dc 50%); }
+.origin-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.origin-button { padding: 8px 5px; border: 1px solid transparent; color: var(--ink); background: #fff; font-size: 12px; line-height: 1.4; }
+.origin-button.is-active { border-color: #000; font-weight: 700; }
+.origin-button:hover, .origin-button:focus-visible { color: #fff; background: #000; border-color: #000; }
 .section-note { margin: 11px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
 .layer-row { min-height: 42px; display: flex; align-items: center; gap: 9px; border-top: 1px solid var(--line); }
 .layer-symbol { width: 13px; height: 13px; flex: 0 0 13px; }
@@ -259,7 +256,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
   .location-line { font-size: 11px; }
   .panel-section { padding: 14px 16px; }
   .section-heading { margin-bottom: 8px; }
-  .style-button { padding: 6px 4px; }
+  .origin-button { padding: 6px 4px; }
   .sidebar > .panel-section > .section-note, .layer-section, .sidebar-footer { display: none; }
   .map-title { top: auto; left: 12px; bottom: 62px; padding: 8px; }
   .map-controls { top: auto; right: 12px; bottom: 62px; }
@@ -289,6 +286,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-v
 .connectivity-parameters select { width: 100%; min-width: 0; padding: 9px 5px; background: white; color: var(--ink); border: 1px solid #8b8987; border-radius: 0; font-size: 12px; }
 #connectivity-state { font-size: 12px; line-height: 1.5; }
 .connectivity-legend { font-size: 11px; line-height: 1.5; }
+.connectivity-travel-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.connectivity-travel-mode { padding: 9px 12px; border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 12px; }
+.connectivity-travel-mode.is-active { background: #111; color: #fff; border-color: #111; }
+.connectivity-travel-mode:disabled { background: #f3f3f3; color: #888; cursor: not-allowed; }
 .connectivity-legend span { display: inline-block; width: 18px; border-top: 3px solid; margin-right: 6px; }
 .connectivity-baseline { color: #7AADFF; }
 .connectivity-bridge { color: #FF8D21; }

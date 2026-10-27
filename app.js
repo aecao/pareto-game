@@ -31,14 +31,6 @@ const lightLayer = L.tileLayer(
   },
 );
 
-const streetLayer = L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
-  },
-);
-
 lightLayer.addTo(map);
 L.control.scale({ position: "bottomright", metric: true, imperial: false }).addTo(map);
 
@@ -175,20 +167,6 @@ async function loadBuildings() {
 }
 
 loadBuildings();
-
-document.querySelectorAll("[data-style]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const useStreet = button.dataset.style === "street";
-    map.removeLayer(useStreet ? lightLayer : streetLayer);
-    (useStreet ? streetLayer : lightLayer).addTo(map);
-
-    document.querySelectorAll("[data-style]").forEach((styleButton) => {
-      const isActive = styleButton === button;
-      styleButton.classList.toggle("is-active", isActive);
-      styleButton.setAttribute("aria-pressed", String(isActive));
-    });
-  });
-});
 
 document.querySelector('[data-action="zoom-in"]').addEventListener("click", () => map.zoomIn());
 document.querySelector('[data-action="zoom-out"]').addEventListener("click", () => map.zoomOut());

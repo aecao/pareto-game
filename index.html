@@ -37,20 +37,13 @@
           <p class="location-line"><span class="location-pin" aria-hidden="true"></span> New York City, New York</p>
         </div>
 
-        <section class="panel-section map-only">
+        <section class="panel-section connectivity-only" hidden aria-label="Connectivity origins">
           <div class="section-heading">
-            <span class="eyebrow">MAP STYLE</span>
+            <span class="eyebrow">ORIGIN</span>
             <span class="section-index">01</span>
           </div>
-          <div class="style-switch" role="group" aria-label="Basemap style">
-            <button class="style-button is-active" type="button" data-style="light" aria-pressed="true">
-              <span class="style-swatch swatch-light" aria-hidden="true"></span>Light
-            </button>
-            <button class="style-button" type="button" data-style="street" aria-pressed="false">
-              <span class="style-swatch swatch-street" aria-hidden="true"></span>Street
-            </button>
-          </div>
-          <p class="section-note">A quiet context map keeps future place data in focus.</p>
+          <div id="connectivity-origins" class="origin-switch" role="group" aria-label="Origin points"></div>
+          <p id="connectivity-origin-note" class="section-note">Loading origin locations. Only Main Street has precomputed walking results.</p>
         </section>
 
         <section class="panel-section layer-section exploration-only">
@@ -113,15 +106,18 @@
         <section class="connectivity-only connectivity-parameters" hidden aria-labelledby="connectivity-heading">
           <span class="eyebrow">ROOSEVELT ISLAND / WALKING PROTOTYPE</span>
           <h1 id="connectivity-heading">Connectivity</h1>
-          <p class="section-note">Origin: the centre of Roosevelt Island. Toggle proposed pedestrian bridges to compare walking reach with today's network.</p>
+          <p class="section-note">Select an origin above. Main Street uses the existing island-centre walking results; alternate origins are marker previews only.</p>
           <fieldset id="connectivity-fields" disabled>
             <legend>Walking scenario</legend>
+            <div class="connectivity-travel-modes" role="group" aria-label="Travel mode">
+              <button type="button" class="connectivity-travel-mode is-active" aria-pressed="true">Walking</button>
+              <button type="button" class="connectivity-travel-mode" aria-pressed="false" disabled aria-describedby="connectivity-biking-note">Biking</button>
+            </div>
+            <p id="connectivity-biking-note" class="section-note">Biking isochrones are not available yet.</p>
             <div id="connectivity-bridges" class="connectivity-bridges" role="group" aria-label="Proposed bridges"></div>
             <label for="connectivity-budget">Travel-time budget: <output id="connectivity-budget-value" for="connectivity-budget">45 min</output></label>
             <input id="connectivity-budget" type="range" min="0" max="60" step="1" value="45">
             <div class="connectivity-range-scale" aria-hidden="true"><span>0</span><span>15</span><span>30</span><span>45</span><span>60 min</span></div>
-            <label for="connectivity-scenario">Map comparison</label>
-            <select id="connectivity-scenario"><option value="both">Baseline + selected bridges</option><option value="baseline">Baseline only</option><option value="selected">Selected bridges only</option></select>
           </fieldset>
           <p id="connectivity-state" role="status" aria-live="polite">Select Connectivity to load walking results.</p>
           <p id="connectivity-error" class="siting-error" role="alert" hidden></p>
@@ -138,7 +134,7 @@
             <p>Source node IDs and endpoint levels define connectivity. Shorelines, boundary lines, vehicle-only roads and unbuilt streets are excluded. Sidewalks, crossings, barriers and access hours remain incomplete; this is not a pedestrian navigation service or step-free analysis.</p>
             <p>Lines show reachable street intervals, not all reachable land, shaded in 5-minute walking-time bands (network time, not straight-line distance). The budget slider covers 0–60 minutes; metrics are computed in the browser and match the precomputed 15/30/45/60-minute checks. Node counts are network diagnostics, not population or jobs. The baseline can reach Queens over the existing Roosevelt Island Bridge walkway; the tram and subway are not modeled.</p>
             <p>Roosevelt Island internal routing is provisional. No cycling, transit, vehicle, rent or property-value effects are modeled. Siting rankings are unchanged.</p>
-            <a href="assets/connectivity/walking.json?v=three-bridges-v7" download>Download walking snapshot (JSON)</a>
+            <a href="assets/connectivity/walking.json?v=three-bridges-v9" download>Download walking snapshot (JSON)</a>
           </details>
         </section>
 
@@ -289,7 +285,7 @@
       </aside>
       <aside class="connectivity-only connectivity-results" hidden aria-label="Connectivity results">
         <div class="results-heading">
-          <span class="eyebrow">BASELINE / HYPOTHETICAL BRIDGE</span>
+          <span class="eyebrow">BASELINE / PROPOSED BRIDGES</span>
           <h2>Walking access</h2>
           <p id="connectivity-summary" role="status" aria-live="polite">Waiting for walking data.</p>
           <p class="siting-warning">Hypothetical landing and approach geometry. Connectivity does not establish feasibility.</p>
@@ -298,7 +294,7 @@
         <section class="siting-detail">
           <h3>Reachability at selected budget</h3>
           <dl id="connectivity-metrics" class="siting-metrics"></dl>
-          <p class="section-note">The baseline reaches Queens over the existing crossing; the hypothetical bridge adds a different Queens connection from the island-side origin.</p>
+          <p class="section-note">Counts are source street nodes reachable within the budget; "Manhattan/other" covers nodes off the island and outside Queens.</p>
         </section>
       </aside>
       <section class="market-only market-results" hidden aria-label="Market results">
@@ -440,8 +436,8 @@
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
     <script src="siting.js"></script>
-    <script src="connectivity-model.js?v=three-bridges-v7"></script>
-    <script src="connectivity.js?v=three-bridges-v7"></script>
+    <script src="connectivity-model.js?v=three-bridges-v9"></script>
+    <script src="connectivity.js?v=three-bridges-v9"></script>
     <script src="market-model.js"></script>
     <script src="market.js"></script>
     <script src="model-interaction.js"></script>
