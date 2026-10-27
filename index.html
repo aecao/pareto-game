@@ -25,6 +25,7 @@
         <button type="button" data-mode="connectivity" aria-pressed="false">Connectivity</button>
         <button type="button" data-mode="market" aria-pressed="false">Market</button>
         <button type="button" data-mode="housing" aria-pressed="false">Housing</button>
+        <button type="button" data-mode="income" aria-pressed="false">Income</button>
       </nav>
     </header>
 
@@ -204,6 +205,18 @@
           <button id="housing-refresh" type="button" class="secondary-button">Refresh from sheet</button>
           <p id="housing-state" role="status" aria-live="polite">Open Housing to load data.</p>
           <p class="section-note"><a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6qlE4hFULSfzCQ9ZwbQqA8jIEkcfJMfg8Ro4GulHRZpl9oRDl6ank0QavwYA8U6AFXdJFELQNdP1y/pubhtml?gid=2081099550">Developments source</a> · <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6qlE4hFULSfzCQ9ZwbQqA8jIEkcfJMfg8Ro4GulHRZpl9oRDl6ank0QavwYA8U6AFXdJFELQNdP1y/pubhtml?gid=898231653">Buildings source</a></p>
+        </section>
+        <section class="panel-section income-only" hidden aria-label="Income sources">
+          <span class="eyebrow">INCOME / ACS 2024</span>
+          <h1>Income</h1>
+          <p class="section-note">Individual income for people age 15+, not household income. 2020–2024 ACS five-year estimates in 2024 dollars.</p>
+          <label for="income-tract">Open a census tract</label>
+          <select id="income-tract" disabled><option value="">Load Income first</option></select>
+          <p id="income-state" role="status" aria-live="polite">Open Income to load tract data.</p>
+          <button id="income-retry" class="secondary-button" type="button" hidden>Retry Income</button>
+          <p class="section-note">Queens CD1/CD2 and Manhattan CD6/CD8. Whole tracts qualify with at least 1% area in any requested district. Counts are not clipped or allocated to districts.</p>
+          <p class="section-note">Blue fill: at least 99% inside the district union. Tan dashed fill: partial overlap. Black dashed outlines: DCP community districts (26b). Area includes water.</p>
+          <p class="section-note"><a href="https://data.census.gov/table/ACSDT5Y2024.B06010">ACS B06010 source</a> · <a href="assets/income/tracts.json" download>Download tract snapshot</a></p>
         </section>
         <div class="sidebar-footer exploration-only">
           <span class="footer-rule"></span>
@@ -424,5 +437,7 @@
     <script src="far.js"></script>
     <script src="housing-model.js"></script>
     <script src="housing.js"></script>
+    <script src="income-model.js"></script>
+    <script src="income.js"></script>
   </body>
 </html>

@@ -197,6 +197,8 @@ document.querySelector('[data-action="home"]').addEventListener("click", () => {
     map.fitBounds(sitingHomeBounds, { padding: [30, 30] });
   } else if (document.body.dataset.mode === "connectivity" && connectivityData) {
     fitConnectivityMap();
+  } else if (document.body.dataset.mode === "income" && incomeGroup) {
+    fitIncomeMap();
   } else {
     map.setView(islandCenter, islandZoom, { animate: true });
   }

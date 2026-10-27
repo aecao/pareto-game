@@ -273,16 +273,18 @@ function fitSitingMap() {
 }
 
 function setStudyMode(mode) {
-  if (!["exploration", "siting", "connectivity", "market", "housing"].includes(mode)) throw new Error("Unknown study mode.");
+  if (!["exploration", "siting", "connectivity", "market", "housing", "income"].includes(mode)) throw new Error("Unknown study mode.");
   document.body.dataset.mode = mode;
   const isSiting = mode === "siting";
   const isConnectivity = mode === "connectivity";
   const isMarket = mode === "market";
   const isHousing = mode === "housing";
+  const isIncome = mode === "income";
   document.querySelector(".workspace").classList.toggle("is-housing", isHousing);
   document.querySelector(".workspace").classList.toggle("is-siting", isSiting);
   document.querySelector(".workspace").classList.toggle("is-connectivity", isConnectivity);
   document.querySelector(".workspace").classList.toggle("is-market", isMarket);
+  document.querySelector(".workspace").classList.toggle("is-income", isIncome);
   document.querySelectorAll("[data-mode]").forEach((button) => {
     const active = button.dataset.mode === mode;
     button.classList.toggle("is-active", active);
@@ -292,12 +294,16 @@ function setStudyMode(mode) {
   document.querySelectorAll(".connectivity-only").forEach((element) => { element.hidden = !isConnectivity; });
   document.querySelectorAll(".market-only").forEach((element) => { element.hidden = !isMarket; });
   document.querySelectorAll(".housing-only").forEach((element) => { element.hidden = !isHousing; });
+  document.querySelectorAll(".income-only").forEach((element) => { element.hidden = !isIncome; });
   document.querySelectorAll(".map-only").forEach((element) => { element.hidden = isMarket || isHousing; });
+  document.querySelector(".map-shell").setAttribute("aria-label", isIncome
+    ? "Interactive income tract map of Manhattan CD6/CD8 and Queens CD1/CD2" : "Interactive map of Roosevelt Island");
   document.querySelectorAll(".exploration-only").forEach((element) => { element.hidden = mode !== "exploration"; });
   map.closePopup();
   map.removeLayer(sitingGroup);
   map.removeLayer(connectivityGroup);
   map.removeLayer(buildingLayer);
+  if (incomeGroup) map.removeLayer(incomeGroup);
   if (isSiting) {
     if (sitingData) {
       sitingGroup.addTo(map);
@@ -318,6 +324,13 @@ function setStudyMode(mode) {
     loadMarket();
   } else if (isHousing) {
     loadHousing();
+  } else if (isIncome) {
+    if (incomeGroup && incomeData) {
+      incomeGroup.addTo(map);
+      fitIncomeMap();
+    } else {
+      loadIncome();
+    }
   } else {
     buildingLayer.addTo(map);
     map.setMaxBounds(studyBounds);

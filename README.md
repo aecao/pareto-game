@@ -2,6 +2,43 @@
 
 A static Roosevelt Island mapping study, designed for GitHub Pages.
 
+## Income mode
+
+Select **Income**, then click a tract polygon or use the keyboard-accessible
+tract selector. Each popup plots income bands on x and estimated people age 15+
+on y, with exact counts and each category's own 90% margin of error in a table.
+Hover bars for counts/MOEs; the chart scrolls horizontally on small screens.
+Home resets to the full tract extent. Failed loads clear the layer and offer Retry.
+
+The fixed [snapshot](assets/income/tracts.json) contains **183 unique whole tracts**:
+Manhattan CD6 28 memberships, CD8 42; Queens CD1 66, CD2 50. Memberships overlap,
+so those counts must not be added as unique tracts. **42 tracts** are flagged
+partial; nine have zero estimated population 15+ (zero-height bars).
+
+Source: [2020–2024 ACS five-year B06010](https://data.census.gov/table/ACSDT5Y2024.B06010),
+individual past-12-month income in **2024 inflation-adjusted dollars**, not
+household income. "No income" is separate from "$1 to $9,999 or loss";
+"With income" is a subtotal, not another bar; "$75,000 or more" is open-ended.
+These are categorical bands with unequal income widths, not a continuous
+histogram or a claim that the highest incomes stop at $75,000.
+
+2024 TIGER/Line tracts qualify when at least **1% of their area** intersects
+any requested same-borough community district (NYC DCP **26b** boundaries).
+Full tract shapes and full tract counts are retained, never population-clipped
+or allocated to districts. Area includes water and is not population weighted.
+Tan dashed tracts have less than **99%** area inside the actual district union;
+this flag uses a cartographic tolerance for tiny boundary seams. Black dashed
+lines show the community district boundaries. Exact per-district and union
+shares remain in the download. Sampling uncertainty can be large; MOEs are
+not summed or presented as percentage MOEs.
+
+The companion POSTGIS exporter is `01_sites/export_income_web.py`, configured
+under `datasets.income_tracts`. It preserves all source estimates/MOEs, checks
+exact ACS/TIGER county keys and bin totals, and produces EPSG:2263 GeoParquet,
+source hashes, validation accounting and WGS84 web JSON. Analytical/export
+outputs are immutable: archive reviewed outputs explicitly before regeneration.
+No live Census API key or database is required by the static app.
+
 ## Visual style
 
 The interface follows the visual language of [aecao/portfolio](https://github.com/aecao/portfolio):
