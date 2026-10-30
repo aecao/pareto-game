@@ -810,3 +810,73 @@ here those are not estimated. No lot area, rentable/gross conversion, existing
 building acquisition/demolition, displacement, affordable-unit requirement,
 bridge cost, subsidy, local cost/price, legal zoning or Siting capacity is inferred.
 Raising the ceiling beyond the economic optimum alone adds no residual value.
+# Jobs/industry Data view
+
+The **jobs/industry** dataset uses 2023 LODES WAC **JT01 primary workplace jobs**
+at native 2020 census tract and NTA scales across NYC. It preserves the existing
+Roosevelt Island NTA split. Both scales conserve **4,142,287 jobs**. Industry
+counts are summed first, then the largest of the four existing broad groups
+sets the color of **all total-job dots** in that area. This is not a map of only
+the winning industry's jobs and is not the earlier JT00 dominant-only layer.
+
+Each dot represents 10 jobs; a final remainder dot represents 1-9 jobs, with
+proportional dot area. There are 415,299 representative dots at tract scale and
+414,333 at NTA scale. There are 23 zero-job tracts and 16 zero-job NTA areas,
+shown without dots. The 13 tract ties use alphabetically first group ID, with
+all tied winners disclosed in the popup; no NTA ties occur. Popups retain exact
+total jobs and all four group counts.
+
+The **Jobs classification** dropdown also offers **20 LODES industry sectors**,
+**Worker age**, and **Monthly job earnings**. Both industry views color all
+total-job dots by the dominant category after aggregation (ascending category-ID
+tie-break, with all ties disclosed). Age and earnings instead split dots among
+categories: each category gets full 10-job dots and its own smaller remainder
+dot with proportional area. This retains even 1-job categories without rounding
+them away. Age bins: 29 or younger, 30-54, 55 or older (`CA01-CA03`). Earnings
+bins: $1,250/month or less, $1,251-$3,333/month, over $3,333/month (`CE01-CE03`);
+these are published job earnings, not household income.
+Exact counts remain available in area popups. Age/earnings have respectively
+417,351/417,401 tract dots and 414,576/414,566 NTA dots; all encode the same
+4,142,287 jobs by symbol area.
+
+Compact `categories-tract.json` (about 736 KiB) and
+`categories-neighborhood.json` (89 KiB) load alongside the immutable geometry.
+They carry definitions/colors and exact counts keyed by geoid; source hash,
+complete area coverage and all three partitions are validated before display.
+The worker reserves enough seeded coordinates for the largest classification,
+preserving every original dot as a coordinate prefix. Switching classifications
+only changes active dots, colors and remainder sizes, without new fetches,
+workers, resampling, or map movement. Legends and popups follow the selection.
+Paint order is seeded and shuffled so one proportional category does not
+systematically cover the others in dense areas.
+Open popups close on a switch to prevent stale labels. Choice persists across
+scale and dataset changes. The classification control is disabled during loads
+and failures; Retry reloads both counts and geometry.
+
+No pre-generated job points are fetched. Lazy-loaded per-scale assets contain
+exact totals, native polygons and land-only triangle samplers (about 12.0 MiB
+for tracts / 5.9 MiB for NTAs before HTTP compression). PostGIS subtracts the
+existing verified native 2020 water polygons before export. Triangulation
+runs in EPSG:2263 with triangle areas in square US feet; vertices are exported
+in EPSG:4326. A seeded browser worker generates deterministic area-weighted
+triangle samples and transfers coordinate buffers to one noninteractive canvas.
+Locations are synthetic land positions, not actual workplaces; parks and other
+land remain eligible. The final triangle barycentric interpolation uses web
+coordinates for cartographic display.
+
+Rendering is clipped to the viewport and chunked across animation frames,
+without thousands of Leaflet point objects,
+with zoom-aware radius `clamp(0.6, 0.6 * 2^((zoom - 12)/2), 1.4)` CSS pixels.
+The minimum 1.2 px diameter and full opacity avoid faint subpixel haze;
+close-up dots reach the original 1.4 px radius at zoom 15. Canvas backing
+resolution follows device pixel ratio. Dense areas can still overlap at
+overview scales; no blur filter or heatmap is applied.
+This keeps distinct dot symbols without dropping points or
+changing jobs per dot. Partial-dot area remains proportional to its remainder
+at every zoom. These are cartographic display assumptions; visual density is
+jobs per land area, not area total.
+Dots hide during movement and
+redraw afterward. Workers, canvases and pending drawing frames are cleaned up
+when leaving the layer, and recreate on return. Dataset and scale caches,
+stale-response protection and explicit errors/Retry preserve existing Data
+behavior. Jobs scale memory is independent from income and commute views.

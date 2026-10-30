@@ -213,6 +213,7 @@
             <option value="transport">Transportation by earnings + commute modes</option>
             <option value="od">origin-destination</option>
             <option value="do">destination-origin</option>
+            <option value="jobs">jobs/industry</option>
           </select>
           <p class="section-note" data-household-copy>Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
           <p id="transport-source-note" class="section-note" hidden>Tracts only. B08119 stacks six commute modes by individual earnings (2024 dollars), with original tract 90% MOEs. Beside it, a B08301 pie shows ten commute categories, summed from whole block groups with approximate root-sum-of-squares MOEs. Both use 2020–2024 ACS estimates; their worker universes differ. No Roosevelt Island comparison. Grey means zero estimated workers with earnings, not missing data; areas remain clickable. Home fits NYC. <a href="https://data.census.gov/table/ACSDT5Y2024.B08119">B08119</a> · <a href="https://data.census.gov/table/ACSDT5Y2024.B08301">B08301</a>.</p>
@@ -229,6 +230,19 @@
           <select id="income-block-group" disabled><option value="">Load Data first</option></select>
           <p id="income-state" role="status" aria-live="polite">Open Data to load neighborhood data.</p>
           <button id="income-retry" class="secondary-button" type="button" hidden>Retry Data</button>
+          <div id="jobs-industry-controls" hidden>
+            <label for="jobs-classification">Jobs classification</label>
+            <select id="jobs-classification" disabled>
+              <option value="broad">Four broad industry groups</option>
+              <option value="sectors">20 LODES industry sectors</option>
+              <option value="age">Worker age</option>
+              <option value="earnings">Monthly job earnings</option>
+            </select>
+            <p class="section-note">2023 LODES JT01 primary workplace jobs, citywide NYC. Seeded synthetic locations on land, not actual workplaces; no pre-generated job-dot layer is loaded. Zero-job areas have no dots. Click an area for exact counts and tied winners. Native 2020 geography includes the Roosevelt Island split at NTA scale.</p>
+            <p id="jobs-classification-note" class="section-note"></p>
+            <div id="jobs-industry-legend" aria-label="Jobs category colors"></div>
+            <p class="section-note">Dots become smaller at wider zoom levels to reduce solid-color overlap and reveal job concentrations. The count stays fixed at one dot per 10 jobs at every zoom; larger dots return as you zoom in. Density shows jobs per land area, while area details give total jobs.</p>
+          </div>
           <div id="od-controls" hidden>
             <p id="od-direction-help" class="section-note" hidden>2023 LODES JT01 primary-job links, native 2020 geography. Select a workplace in Financial District-Battery Park City, Chelsea-Hudson Yards, Midtown South-Flatiron-Union Square, Midtown-Times Square, Murray Hill-Kips Bay, East Midtown-Turtle Bay, or the four study areas. All 91 constituent tracts are selectable at tract scale. Connections lead to all NYC residence areas, not just the study areas. Orange: selected workplace destination. Blue: residence origins. Purple outlines: linked residence areas. Self-connections are small loops. Non-NYC residences are excluded; these are not total incoming jobs or observed trips. Roosevelt Island is split at both ends. Selection and filtering do not move the map.</p>
             <label for="od-threshold">Minimum job links per pair: <output id="od-threshold-value" for="od-threshold">1</output></label>
@@ -457,7 +471,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
-    <script src="siting.js?v=data-od-v8"></script>
+    <script src="siting.js?v=jobs-v1"></script>
     <script src="connectivity-model.js?v=three-bridges-v9"></script>
     <script src="connectivity.js?v=three-bridges-v9"></script>
     <script src="market-model.js"></script>
@@ -473,7 +487,9 @@
     <script src="transport-model.js?v=data-transport-v1"></script>
     <script src="transport.js?v=data-transport-v1"></script>
     <script src="origin-destination-model.js?v=data-od-v11"></script>
-    <script src="income.js?v=data-od-v9"></script>
+    <script src="jobs-industry-model.js?v=jobs-v6"></script>
+    <script src="income.js?v=jobs-v5"></script>
+    <script src="jobs-industry.js?v=jobs-v6"></script>
     <script src="origin-destination.js?v=data-od-v11"></script>
     <script src="explore-model.js"></script>
     <script src="explore.js"></script>

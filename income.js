@@ -14,6 +14,7 @@ let householdScale = incomeScale.value;
 let incomePreviousDataset = incomeDataset.value;
 let originDestinationScale = "tract";
 let destinationOriginScale = "neighborhood";
+let jobsIndustryScale = "neighborhood";
 let originDestinationMinimum = 1;
 const incomeNumber = (value) => value.toLocaleString("en-US");
 
@@ -128,6 +129,9 @@ function incomePopup(feature, reference = null) {
 }
 
 function incomeMapStyle(feature) {
+  if (feature.properties.dataset === "jobs") {
+    return { color: "#777", weight: 0.6, fillColor: "#fff", fillOpacity: 0.02 };
+  }
   const noHouseholds = feature.properties.total === 0;
   return {
     color: noHouseholds ? "#777" : "#0035ff", weight: 0.7,
@@ -162,6 +166,21 @@ function openIncomeArea(geoid) {
   layer.openPopup();
 }
 
+function jobsIndustryLegend(data) {
+  const mode = document.getElementById("jobs-classification").value;
+  const definition = JobsIndustryModel.classification(data.metadata, mode);
+  const legend = document.getElementById("jobs-industry-legend");
+  legend.replaceChildren();
+  for (const group of Object.values(definition.groups)) {
+    const item = incomeNode("p", null, legend);
+    incomeNode("span", "\u25cf ", item, { style: `color:${group.color}`, "aria-hidden": "true" });
+    incomeNode("span", group.label, item);
+  }
+  document.getElementById("jobs-classification-note").textContent = definition.proportional
+    ? `Dots are split by exact category job counts. One dot per 10 jobs within each category; smaller remainder dots preserve small categories.${mode === "earnings" ? " Earnings are monthly job earnings, not household income." : ""}`
+    : "All jobs in each area use its dominant category color, including jobs in other categories. Ties use the first category ID. Click an area for exact counts.";
+}
+
 async function loadIncome() {
   const request = ++incomeRequest;
   if (incomeController) incomeController.abort();
@@ -169,12 +188,13 @@ async function loadIncome() {
   const scale = incomeScale.value;
   const transport = incomeDataset.value === "transport";
   const reverse = incomeDataset.value === "do";
+  const jobs = incomeDataset.value === "jobs";
   const od = incomeDataset.value === "od" || reverse;
-  if ((transport && scale !== "tract") || (od && !["tract", "neighborhood"].includes(scale))) {
+  if ((transport && scale !== "tract") || ((od || jobs) && !["tract", "neighborhood"].includes(scale))) {
     throw new Error("Unsupported geography for this dataset.");
   }
-  const cacheKey = od ? `${incomeDataset.value}:${scale}` : transport ? "transport:tract" : scale;
-  const datasetLabel = reverse ? "destination-origin" : od ? "origin-destination" : transport ? "transportation" : "household income";
+  const cacheKey = od || jobs ? `${incomeDataset.value}:${scale}` : transport ? "transport:tract" : scale;
+  const datasetLabel = jobs ? "jobs/industry" : reverse ? "destination-origin" : od ? "origin-destination" : transport ? "transportation" : "household income";
   const definition = IncomeModel.scales[scale];
   const state = document.getElementById("income-state");
   const retry = document.getElementById("income-retry");
@@ -200,6 +220,7 @@ async function loadIncome() {
   incomeGroup.clearLayers();
   incomeAreaLayers.clear();
   incomeData = null;
+  document.getElementById("jobs-classification").disabled = true;
   incomeHomeBounds = null;
   incomeSelector.replaceChildren(incomeNode("option", "Loading areas...", null, { value: "" }));
   document.getElementById("income-area-label").textContent = `Open a ${definition.label.toLowerCase()}`;
@@ -213,7 +234,16 @@ async function loadIncome() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      if (od) {
+      if (jobs) {
+        const [geometry, categories] = await Promise.all([`${scale}.json`, `categories-${scale}.json`].map(async file => {
+          const response = await fetch(`assets/jobs_industry/${file}?v=jobs-v5`, {
+            cache: "no-cache", signal: incomeController.signal,
+          });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        }));
+        data = JobsIndustryModel.withCategories(JobsIndustryModel.normalize(geometry, scale), categories);
+      } else if (od) {
         const [payload, boundaries] = await Promise.all([
           fetchData(`${reverse ? "destination-origin" : "origin-destination"}${scale === "neighborhood" ? "-nta" : ""}.json`),
           fetchData(`od-boundaries-${scale}.json`),
@@ -233,15 +263,27 @@ async function loadIncome() {
       incomeCache.set(cacheKey, data);
     }
     if (request !== incomeRequest) return;
-    const reference = !od && scale === "neighborhood"
+    const reference = !od && !jobs && scale === "neighborhood"
       ? data.features.find((feature) => feature.properties.geoid === "MN0801-RI")?.properties : null;
-    if (!od && scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
+    if (!od && !jobs && scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
     L.geoJSON(data, {
       renderer: L.canvas({ padding: 0.3 }),
       style: incomeMapStyle,
       onEachFeature(feature, layer) {
         const p = feature.properties;
         const label = p.scale ? p.name : `${p.borough} ${p.name}`;
+        if (jobs) {
+          layer.bindTooltip(`${label}: ${incomeNumber(p.total)} primary jobs`);
+          layer.bindPopup(() => {
+            const options = layer.getPopup().options;
+            options.minWidth = options.maxWidth = Math.min(420, Math.max(230, map.getSize().x - 70));
+            options.maxHeight = Math.max(180, Math.min(620, map.getSize().y - 90));
+            return jobsIndustryPopup(feature);
+          }, { className: "income-popup" });
+          layer.on("click", () => { incomeSelector.value = p.geoid; });
+          incomeAreaLayers.set(p.geoid, layer);
+          return;
+        }
         if (od) {
           layer.bindTooltip(`${label} - ${p.nta_name}: ${incomeNumber(p.total)} NYC primary-job links`);
           layer.on("click", () => { selectOriginDestination(p.geoid); });
@@ -273,6 +315,11 @@ async function loadIncome() {
       incomeSelector.append(incomeNode("option", label, null, { value: p.geoid }));
     }
     incomeData = data;
+    if (jobs) {
+      jobsIndustryLegend(data);
+      document.getElementById("jobs-classification").disabled = false;
+      new JobsIndustryLayer(data).addTo(incomeGroup);
+    }
     if (od) {
       document.getElementById("od-threshold").max = "1000";
       document.getElementById("od-threshold").disabled = false;
@@ -311,23 +358,26 @@ incomeScale.addEventListener("change", loadIncome);
 incomeDataset.addEventListener("change", () => {
   const transport = incomeDataset.value === "transport";
   const reverse = incomeDataset.value === "do";
+  const jobs = incomeDataset.value === "jobs";
   const od = incomeDataset.value === "od" || reverse;
-  const nonHousehold = transport || od;
+  const nonHousehold = transport || od || jobs;
   if (incomePreviousDataset === "household") householdScale = incomeScale.value;
   if (incomePreviousDataset === "od") originDestinationScale = incomeScale.value;
   if (incomePreviousDataset === "do") destinationOriginScale = incomeScale.value;
-  incomeScale.value = reverse ? destinationOriginScale : od ? originDestinationScale : transport ? "tract" : householdScale;
+  if (incomePreviousDataset === "jobs") jobsIndustryScale = incomeScale.value;
+  incomeScale.value = jobs ? jobsIndustryScale : reverse ? destinationOriginScale : od ? originDestinationScale : transport ? "tract" : householdScale;
   incomeScale.disabled = transport;
   for (const option of incomeScale.options ?? []) {
-    option.disabled = od ? !["tract", "neighborhood"].includes(option.value) : transport && option.value !== "tract";
+    option.disabled = od || jobs ? !["tract", "neighborhood"].includes(option.value) : transport && option.value !== "tract";
   }
   incomePreviousDataset = incomeDataset.value;
   document.querySelectorAll("[data-household-copy]").forEach((node) => { node.hidden = nonHousehold; });
   document.getElementById("transport-source-note").hidden = !transport;
   document.getElementById("od-source-note").hidden = !od || reverse;
   document.getElementById("od-controls").hidden = !od;
-  document.getElementById("nhgis-citation").hidden = od;
-  document.getElementById("data-source-eyebrow").textContent = od ? "DATA / LODES 2023" : "DATA / ACS 2024";
+  document.getElementById("jobs-industry-controls").hidden = !jobs;
+  document.getElementById("nhgis-citation").hidden = od || jobs;
+  document.getElementById("data-source-eyebrow").textContent = od || jobs ? "DATA / LODES 2023" : "DATA / ACS 2024";
   loadIncome();
 });
 incomeSelector.addEventListener("change", () => {

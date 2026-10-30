@@ -13,6 +13,8 @@ const data = JSON.parse(read("assets/income/origin-destination.json"));
 const ntaData = JSON.parse(read("assets/income/origin-destination-nta.json"));
 const incoming = JSON.parse(read("assets/income/destination-origin.json"));
 const incomingNta = JSON.parse(read("assets/income/destination-origin-nta.json"));
+const jobsNta = JSON.parse(read("assets/jobs_industry/neighborhood.json"));
+const jobsTract = JSON.parse(read("assets/jobs_industry/tract.json"));
 const tractBoundaries = JSON.parse(read("assets/income/od-boundaries-tract.json"));
 const ntaBoundaries = JSON.parse(read("assets/income/od-boundaries-neighborhood.json"));
 const neighborhood = JSON.parse(read("assets/income/geographies/neighborhood.json"));
@@ -113,6 +115,7 @@ function harness(fetch) {
   get("income-scale").options = ["block_group", "tract", "neighborhood", "community_district", "borough"]
     .map((value) => ({ value, disabled: false }));
   get("income-dataset").value = "household";
+  get("jobs-classification").value = "broad";
   const bounds = { isValid: () => true, pad: () => bounds, extend() { return this; } };
   const groups = [];
   const makeGroup = () => {
@@ -136,6 +139,11 @@ function harness(fetch) {
     project: () => ({ x: 100, y: 100 }), unproject: (p) => p,
   };
   const context = {
+    JobsIndustryModel: require("../jobs-industry-model.js"),
+    JobsIndustryLayer: class {
+      constructor(data) { this.data = data; }
+      addTo(parent) { parent.addLayer(this); return this; }
+    },
     IncomeModel: income, TransportModel: transport, OriginDestinationModel: model, AbortController, console, map, fetch,
     document: {
       body: { dataset: { mode: "income" } }, getElementById: get, querySelector: () => get("map-shell"),
@@ -170,10 +178,100 @@ function harness(fetch) {
 const settle = () => new Promise(setImmediate);
 const respond = async (url) => ({
   ok: true, json: async () => url.includes("od-boundaries-neighborhood") ? ntaBoundaries
+    : url.includes("jobs_industry/categories-neighborhood") ? JSON.parse(read("assets/jobs_industry/categories-neighborhood.json"))
+    : url.includes("jobs_industry/categories-tract") ? JSON.parse(read("assets/jobs_industry/categories-tract.json"))
+    : url.includes("jobs_industry/neighborhood") ? jobsNta
+    : url.includes("jobs_industry/tract") ? jobsTract
     : url.includes("od-boundaries-tract") ? tractBoundaries
     : url.includes("destination-origin-nta") ? incomingNta
     : url.includes("destination-origin") ? incoming
     : url.includes("origin-destination-nta") ? ntaData : url.includes("origin-destination") ? data : neighborhood,
+});
+
+test("jobs data loads lazily, limits scales, restores separate memories and clears on dataset switches", async () => {
+  const calls = [];
+  const { context, get, group } = harness(async url => { calls.push(url); return respond(url); });
+  await context.loadIncome();
+  assert.ok(calls.every(url => !url.includes("jobs_industry")));
+  get("income-dataset").value = "jobs";
+  get("income-dataset").listeners.change();
+  await settle();
+  assert.equal(get("jobs-industry-controls").hidden, false);
+  assert.equal(get("od-controls").hidden, true);
+  assert.equal(get("nhgis-citation").hidden, true);
+  assert.equal(group.layers.filter(l => l.data?.metadata.dataset === "jobs_industry").length, 1);
+  assert.equal(group.layers.filter(l => l.feature).length, 263);
+  assert.deepEqual(get("income-scale").options.filter(o => !o.disabled).map(o => o.value), ["tract", "neighborhood"]);
+  get("jobs-classification").value = "sectors";
+  get("income-scale").value = "tract";
+  await get("income-scale").listeners.change();
+  assert.equal(group.layers.filter(l => l.feature).length, 2327);
+  assert.equal(get("jobs-classification").value, "sectors");
+  assert.equal(get("jobs-industry-legend").children.length, 20);
+  get("income-dataset").value = "od";
+  get("income-dataset").listeners.change();
+  await settle();
+  assert.equal(group.layers.length, 30);
+  get("income-dataset").value = "jobs";
+  get("income-dataset").listeners.change();
+  await settle();
+  assert.equal(get("income-scale").value, "tract");
+  assert.equal(get("jobs-classification").value, "sectors");
+  assert.equal(calls.filter(url => url.includes("jobs_industry/tract")).length, 1);
+});
+
+test("category-only failures or mismatched snapshots clear jobs, disable classification and recover through Retry", async () => {
+  for (const invalid of ["http", "schema"]) {
+    let fail = true;
+    const { context, get, group } = harness(async url => {
+      if (fail && url.includes("jobs_industry/categories-")) {
+        return invalid === "http" ? { ok: false, status: 503 } : {
+          ok: true, json: async () => ({ ...JSON.parse(read("assets/jobs_industry/categories-neighborhood.json")),
+            areas: {} }),
+        };
+      }
+      return respond(url);
+    });
+    const errors = [];
+    context.console = { error: (...args) => errors.push(args) };
+    get("income-dataset").value = "jobs";
+    get("income-dataset").listeners.change();
+    await settle();
+    assert.equal(group.layers.length, 0);
+    assert.equal(get("jobs-classification").disabled, true);
+    assert.equal(get("income-retry").hidden, false);
+    assert.equal(errors.length, 1);
+    assert.match(get("income-state").textContent, invalid === "http" ? /HTTP 503/ : /classification snapshot/);
+    fail = false;
+    await get("income-retry").listeners.click();
+    assert.equal(get("jobs-classification").disabled, false);
+    assert.equal(group.layers.filter(l => l.feature).length, 263);
+  }
+});
+
+test("late jobs response cannot replace newer dataset and missing assets show explicit Retry", async () => {
+  let release;
+  const pending = new Promise(resolve => { release = resolve; });
+  const { context, get, group } = harness(async url => {
+    if (url.includes("jobs_industry")) await pending;
+    return respond(url);
+  });
+  get("income-dataset").value = "jobs";
+  get("income-dataset").listeners.change();
+  get("income-dataset").value = "od";
+  get("income-dataset").listeners.change();
+  await settle();
+  release();
+  await settle();
+  assert.equal(group.layers.length, 30);
+  const failed = harness(async () => ({ ok: false, status: 503 }));
+  failed.context.console = { error() {} };
+  failed.get("income-dataset").value = "jobs";
+  failed.get("income-dataset").listeners.change();
+  await settle();
+  assert.equal(failed.group.layers.length, 0);
+  assert.ok(failed.get("income-state").textContent.includes("HTTP 503"));
+  assert.equal(failed.get("income-retry").hidden, false);
 });
 
 test("incoming workplace snapshots reconcile every tract pair to NTA and preserve direction and scope", () => {
