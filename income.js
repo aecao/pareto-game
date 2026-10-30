@@ -13,6 +13,7 @@ const incomeDataset = document.getElementById("income-dataset");
 let householdScale = incomeScale.value;
 let incomePreviousDataset = incomeDataset.value;
 let originDestinationScale = "tract";
+let originDestinationMinimum = 1;
 const incomeNumber = (value) => value.toLocaleString("en-US");
 
 function incomeNode(tag, text, parent, attributes = {}) {
@@ -180,6 +181,10 @@ async function loadIncome() {
     `Interactive ${datasetLabel} map of NYC ${definition.plural}`);
   retry.hidden = true;
   incomeSelector.disabled = true;
+  document.getElementById("od-threshold").disabled = true;
+  document.getElementById("od-threshold").value = "1";
+  document.getElementById("od-threshold-value").textContent = "1";
+  originDestinationMinimum = 1;
   document.getElementById("od-show-all").disabled = true;
   document.getElementById("od-show-all-control").hidden = !(od && scale === "neighborhood");
   map.closePopup();
@@ -261,6 +266,8 @@ async function loadIncome() {
     }
     incomeData = data;
     if (od) {
+      document.getElementById("od-threshold").max = String(data.metadata.max_pair_jobs);
+      document.getElementById("od-threshold").disabled = false;
       const { min_link_width_px: minimum, max_link_width_px: maximum } = data.metadata.display;
       document.getElementById("od-width-legend").textContent =
         `Fixed square-root scale across origins at this geography (${incomeNumber(data.metadata.max_pair_jobs)} links at maximum size): ${minimum}-${maximum} px lines and ${data.metadata.display.min_node_radius_px}-${data.metadata.display.max_node_radius_px} px destination radii. Larger counts give thicker lines and larger nodes; exact counts are in tooltips and the table.`;

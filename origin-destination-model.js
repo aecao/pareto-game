@@ -129,6 +129,11 @@
     return boundaries;
   }
 
+  function visibleFlows(flows, minimum) {
+    if (!Number.isSafeInteger(minimum) || minimum < 1) throw new Error("Invalid LODES minimum job-link threshold.");
+    return flows.filter((flow) => flow.jobs >= minimum);
+  }
+
   function linkWidth(jobs, metadata) {
     if (!count(jobs) || jobs <= 0 || !count(metadata.max_pair_jobs) || jobs > metadata.max_pair_jobs ||
         !Number.isFinite(metadata.display?.min_link_width_px) || metadata.display.min_link_width_px <= 0 ||
@@ -149,7 +154,7 @@
     return minimum + Math.sqrt(jobs / metadata.max_pair_jobs) * (maximum - minimum);
   }
 
-  const api = { normalize, normalizeBoundaries, linkWidth, nodeRadius };
+  const api = { normalize, normalizeBoundaries, visibleFlows, linkWidth, nodeRadius };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.OriginDestinationModel = api;
 })(globalThis);

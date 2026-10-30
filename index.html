@@ -229,9 +229,12 @@
           <p id="income-state" role="status" aria-live="polite">Open Data to load neighborhood data.</p>
           <button id="income-retry" class="secondary-button" type="button" hidden>Retry Data</button>
           <div id="od-controls" hidden>
+            <label for="od-threshold">Minimum job links per pair: <output id="od-threshold-value" for="od-threshold">1</output></label>
+            <input id="od-threshold" type="range" min="1" max="1" step="1" value="1" disabled aria-describedby="od-threshold-help">
+            <p id="od-threshold-help" class="section-note">Show pairs with at least this many primary-job links. Filters lines, destination nodes and outlines, not origin nodes. Applies separately to each origin; full destination counts remain below. Resets to 1 when data or scale changes.</p>
             <label id="od-show-all-control" hidden><input id="od-show-all" type="checkbox" disabled> Show all four study-origin NTAs</label>
             <button id="od-clear" class="secondary-button" type="button" disabled>Clear selection</button>
-            <p class="section-note">Orange markers: residence origins. Blue markers: workplace destinations. Purple unfilled outlines: displayed destination areas. In all-origins view, connection colors identify the origin as listed below. Thicker connections and larger destination nodes mean more primary-job links. <span id="od-width-legend"></span> Within-area links are loops. All NYC destinations are retained; outside-NYC jobs are counted separately, not drawn. Home or Clear selection hides connections and destination outlines and fits the origin areas.</p>
+            <p class="section-note">Orange markers: residence origins. Blue markers: workplace destinations. Purple unfilled outlines: displayed destination areas. In all-origins view, connection colors identify the origin as listed below. Thicker connections and larger destination nodes mean more primary-job links. <span id="od-width-legend"></span> Within-area links are loops when they meet the threshold. All NYC destination counts are retained in the tables; the threshold only filters the diagram. Outside-NYC jobs are counted separately, not drawn. Home or Clear selection hides connections and destination outlines and fits the origin areas.</p>
             <div id="od-selection" aria-live="polite"></div>
           </div>
           <p class="section-note" data-household-copy>Choose a scale, then click a polygon or select an area. Neighborhoods are the default; their charts include an orange Roosevelt Island reference on the same household-count axis. Larger areas sum whole block groups. Home fits all of NYC.</p>
@@ -463,9 +466,9 @@
     <script src="income-model.js?v=data-od-v1"></script>
     <script src="transport-model.js?v=data-transport-v1"></script>
     <script src="transport.js?v=data-transport-v1"></script>
-    <script src="origin-destination-model.js?v=data-od-v6"></script>
-    <script src="income.js?v=data-od-v6"></script>
-    <script src="origin-destination.js?v=data-od-v6"></script>
+    <script src="origin-destination-model.js?v=data-od-v7"></script>
+    <script src="income.js?v=data-od-v7"></script>
+    <script src="origin-destination.js?v=data-od-v7"></script>
     <script src="explore-model.js"></script>
     <script src="explore.js"></script>
   </body>

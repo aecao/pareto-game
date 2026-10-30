@@ -108,6 +108,15 @@ with origin-specific counts retained even where destination
 nodes overlap. All origins use the same NTA count-to-size scale. Per-origin
 summaries and full destination tables remain expandable below the color labels.
 This does not add other NYC areas as residence origins.
+The **Minimum job links per pair** slider filters pairs inclusively by their
+primary-job-link count, from 1 to the fixed maximum pair count at the current
+scale. It updates connections, loops, destination nodes and destination
+outlines together without moving the map; origin nodes stay visible even when
+no pair qualifies. All-origin filtering applies to each pair separately, not
+combined destination totals. Summaries report shown/hidden pairs and job links;
+full destination tables retain all counts and shares of the origin's unfiltered
+NYC total. Line/node size scales remain fixed. The threshold persists between
+origin selections and Home/Clear, and resets to 1 on dataset or scale loading.
 At both tract and NTA scales, unfilled purple outlines show exactly the
 destination areas in the displayed connections (including within-area links).
 All-origin outlines are deduplicated across origins. Native 2020 TIGER tract

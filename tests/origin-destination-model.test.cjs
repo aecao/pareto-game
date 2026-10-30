@@ -267,6 +267,65 @@ test("boundary fetch failures show Data error without partial origins and Retry 
   assert.equal(overlay.layers.filter((l) => l.kind === "area").length, data.features[0].properties.flows.length);
 });
 
+test("minimum job-link slider filters inclusive pair counts, nodes, outlines and loops without camera changes", async () => {
+  const { context, get, overlay } = harness(respond);
+  get("income-dataset").value = "od";
+  get("income-dataset").listeners.change();
+  await settle();
+  let cameraCalls = 0;
+  context.map.fitBounds = () => { cameraCalls++; };
+  const slider = get("od-threshold");
+  assert.equal(slider.disabled, false);
+  assert.equal(slider.max, String(data.metadata.max_pair_jobs));
+  const change = (minimum) => {
+    slider.value = String(minimum);
+    slider.listeners.input({ target: slider });
+  };
+  const verify = (origins, minimum) => {
+    const expected = origins.flatMap((p) => p.flows.filter((f) => f.jobs >= minimum));
+    const links = overlay.layers.filter((l) => l.kind === "link");
+    assert.equal(links.length, expected.length);
+    assert.deepEqual(overlay.layers.filter((l) => l.kind === "area").map((l) => l.feature.properties.geoid).sort(),
+      [...new Set(expected.map((f) => f.destination))].sort());
+    const self = origins.reduce((sum, p) => sum + p.flows.filter((f) => f.destination === p.geoid && f.jobs >= minimum).length, 0);
+    assert.equal(links.filter((l) => l.points.length === 33).length, self);
+    assert.equal(overlay.layers.filter((l) => l.kind === "node" && l.options.fillColor === "#375a9e").length,
+      expected.length - self);
+    assert.equal(overlay.layers.filter((l) => l.kind === "node" && l.options.fillColor === "#c75200").length, origins.length);
+    const m = origins[0].scale === "tract" ? data.metadata : ntaData.metadata;
+    assert.deepEqual(links.map((l) => l.options.weight).sort((a,b) => a-b),
+      expected.map((f) => model.linkWidth(f.jobs, m)).sort((a,b) => a-b));
+  };
+  change(10);
+  assert.equal(overlay.layers.length, 0);
+  const p = data.features[0].properties;
+  context.openIncomeArea(p.geoid);
+  verify([p], 10);
+  assert.ok(get("income-state").textContent.includes("hiding"));
+  change(data.metadata.max_pair_jobs);
+  verify([p], data.metadata.max_pair_jobs);
+  change(1);
+  verify([p], 1);
+  assert.equal(cameraCalls, 0);
+  get("income-scale").value = "neighborhood";
+  await get("income-scale").listeners.change();
+  cameraCalls = 0;
+  assert.equal(slider.value, "1");
+  assert.equal(slider.max, String(ntaData.metadata.max_pair_jobs));
+  context.showAllOriginDestinations();
+  change(100);
+  verify(ntaData.features.map((f) => f.properties), 100);
+  assert.equal(get("od-show-all").checked, true);
+  const ri = ntaData.features.find((f) => f.properties.geoid === "MN0801-RI").properties;
+  context.openIncomeArea(ri.geoid);
+  verify([ri], 100);
+  change(ntaData.metadata.max_pair_jobs);
+  verify([ri], ntaData.metadata.max_pair_jobs);
+  assert.ok(get("income-state").textContent.includes("showing 0"));
+  assert.equal(cameraCalls, 0);
+  for (const invalid of [0, -1, 1.5, NaN]) assert.throws(() => model.visibleFlows(p.flows, invalid));
+});
+
 test("OD loads lazily with origins only, selection draws all links/nodes and preserves self loops", async () => {
   const calls = [];
   const { context, get, group, overlay } = harness(async (url) => { calls.push(url); return respond(url); });

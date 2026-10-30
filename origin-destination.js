@@ -4,6 +4,18 @@ const originDestinationGroup = L.featureGroup();
 const originDestinationRenderer = L.canvas({ padding: 0.3 });
 let originDestinationSelected = null;
 
+function visibleOriginDestinationFlows(p) {
+  return OriginDestinationModel.visibleFlows(p.flows, originDestinationMinimum);
+}
+
+function originDestinationThresholdSummary(origins) {
+  const flows = origins.flatMap((p) => p.flows);
+  const visible = OriginDestinationModel.visibleFlows(flows, originDestinationMinimum);
+  const shown = visible.reduce((sum, flow) => sum + flow.jobs, 0);
+  const total = flows.reduce((sum, flow) => sum + flow.jobs, 0);
+  return `Minimum ${incomeNumber(originDestinationMinimum)} links per pair: showing ${incomeNumber(visible.length)} of ${incomeNumber(flows.length)} NYC pairs (${incomeNumber(shown)} job links); hiding ${incomeNumber(flows.length - visible.length)} pairs (${incomeNumber(total - shown)} job links).`;
+}
+
 function clearOriginDestination() {
   originDestinationGroup.clearLayers();
   if (incomeGroup.hasLayer(originDestinationGroup)) incomeGroup.removeLayer(originDestinationGroup);
@@ -32,12 +44,12 @@ function selectOriginDestination(geoid) {
   incomeSelector.value = geoid;
   document.getElementById("od-clear").disabled = false;
   appendOriginDestinationSummary(p, document.getElementById("od-selection"));
-  document.getElementById("income-state").textContent = `${p.name} selected. All ${incomeNumber(p.flows.length)} NYC destinations shown; no top-N filter.`;
+  document.getElementById("income-state").textContent = `${p.name} selected. ${originDestinationThresholdSummary([p])}`;
   map.closePopup();
 }
 
 function drawDestinationBoundaries(origins) {
-  const destinations = new Set(origins.flatMap((feature) => feature.properties.flows.map((flow) => flow.destination)));
+  const destinations = new Set(origins.flatMap((feature) => visibleOriginDestinationFlows(feature.properties).map((flow) => flow.destination)));
   L.geoJSON({
     type: "FeatureCollection",
     features: [...destinations].map((id) => incomeData.boundaries[id]),
@@ -57,7 +69,7 @@ function drawOriginDestination(p, color = "#375a9e") {
   const renderer = originDestinationRenderer;
   const selected = incomeAreaLayers.get(geoid);
   selected.setStyle({ color: "#b94c00", weight: 2.5, fillColor: "#ffb36b", fillOpacity: 0.6 });
-  const flows = [...p.flows].sort((a, b) => a.jobs - b.jobs || a.destination.localeCompare(b.destination));
+  const flows = visibleOriginDestinationFlows(p).sort((a, b) => a.jobs - b.jobs || a.destination.localeCompare(b.destination));
   for (const flow of flows) {
     const destination = L.latLng(nodes[flow.destination].center[1], nodes[flow.destination].center[0]);
     let points = [origin, destination];
@@ -98,15 +110,16 @@ function appendOriginDestinationSummary(p, summary) {
   incomeNode("h2", p.name, summary);
   if (p.scale === "tract") incomeNode("p", p.nta_name, summary);
   incomeNode("p", `${incomeNumber(p.total)} primary-job links to ${incomeNumber(p.flows.length)} NYC workplace ${plural}. Orange node: selected residence ${area}. Blue nodes: workplace ${plural}.`, summary);
+  incomeNode("p", originDestinationThresholdSummary([p]), summary);
   if (p.scale === "neighborhood") {
     incomeNode("p", `Sum of ${incomeNumber(p.members.length)} whole native-2020 tracts. Roosevelt Island is separated from Upper East Side-Lenox Hill at both ends; these two areas are custom, not official NTAs.`, summary);
   }
   const same = p.flows.find((flow) => flow.destination === geoid)?.jobs ?? 0;
-  incomeNode("p", `${incomeNumber(same)} links stay within this ${area} (drawn as a loop). ${incomeNumber(p.outside_nyc_jobs)} outside-NYC links are excluded from the diagram; ${incomeNumber(p.resident_primary_jobs)} resident primary jobs in total.`, summary);
+  incomeNode("p", `${incomeNumber(same)} links stay within this ${area} (loop shown only when its count meets the threshold). ${incomeNumber(p.outside_nyc_jobs)} outside-NYC links are excluded from the diagram; ${incomeNumber(p.resident_primary_jobs)} resident primary jobs in total.`, summary);
   const details = incomeNode("details", null, summary, { class: "od-destinations" });
   incomeNode("summary", "All destination counts (largest first)", details);
   const table = incomeNode("table", null, details, { class: "income-popup-table" });
-  incomeNode("caption", "2023 LODES JT01 primary-job links; share of displayed NYC links", table);
+  incomeNode("caption", "2023 LODES JT01 primary-job links; all destinations, including pairs hidden by the threshold; share of all NYC links for this origin", table);
   const head = incomeNode("tr", null, incomeNode("thead", null, table));
   [`Workplace ${area}`, "Links", "Share"].forEach((label) => incomeNode("th", label, head, { scope: "col" }));
   const body = incomeNode("tbody", null, table);
@@ -140,11 +153,21 @@ function showAllOriginDestinations() {
     appendOriginDestinationSummary(p, details);
   });
   originDestinationGroup.addTo(incomeGroup);
-  document.getElementById("income-state").textContent = "All four study-origin NTAs shown. Choose an origin to return to a single diagram.";
+  document.getElementById("income-state").textContent = `All four study-origin NTAs shown. ${originDestinationThresholdSummary(origins.map((f) => f.properties))} Choose an origin to return to a single diagram.`;
   map.closePopup();
 }
 
 document.getElementById("od-clear").addEventListener("click", fitIncomeMap);
+document.getElementById("od-threshold").addEventListener("input", (event) => {
+  const minimum = Number(event.target.value);
+  if (!Number.isSafeInteger(minimum) || minimum < 1 || minimum > incomeData?.metadata.max_pair_jobs) {
+    throw new Error("Invalid LODES minimum job-link threshold.");
+  }
+  originDestinationMinimum = minimum;
+  document.getElementById("od-threshold-value").textContent = incomeNumber(minimum);
+  if (document.getElementById("od-show-all").checked) showAllOriginDestinations();
+  else if (originDestinationSelected) selectOriginDestination(originDestinationSelected);
+});
 document.getElementById("od-show-all").addEventListener("change", (event) => {
   if (event.target.checked) showAllOriginDestinations();
   else {
