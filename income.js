@@ -11,6 +11,8 @@ const incomeSelector = document.getElementById("income-block-group");
 const incomeScale = document.getElementById("income-scale");
 const incomeDataset = document.getElementById("income-dataset");
 let householdScale = incomeScale.value;
+let incomePreviousDataset = incomeDataset.value;
+let originDestinationScale = "tract";
 const incomeNumber = (value) => value.toLocaleString("en-US");
 
 function incomeNode(tag, text, parent, attributes = {}) {
@@ -136,7 +138,8 @@ function fitIncomeMap() {
   const od = incomeData?.metadata.dataset === "lodes_origin_destination";
   if (od) {
     clearOriginDestination();
-    document.getElementById("income-state").textContent = `${incomeNumber(incomeData.features.length)} origin tracts loaded. Select a tract to show its NYC connections.`;
+    const nta = incomeData.metadata.scale === "neighborhood";
+    document.getElementById("income-state").textContent = `${incomeNumber(incomeData.features.length)} origin ${nta ? "NTA areas" : "tracts"} loaded. Select ${nta ? "an NTA" : "a tract"} to show its NYC connections.`;
   }
   map.closePopup();
   map.setMinZoom(9);
@@ -164,8 +167,10 @@ async function loadIncome() {
   const scale = incomeScale.value;
   const transport = incomeDataset.value === "transport";
   const od = incomeDataset.value === "od";
-  if ((transport || od) && scale !== "tract") throw new Error("This dataset requires census tract geography.");
-  const cacheKey = od ? "od:tract" : transport ? "transport:tract" : scale;
+  if ((transport && scale !== "tract") || (od && !["tract", "neighborhood"].includes(scale))) {
+    throw new Error("Unsupported geography for this dataset.");
+  }
+  const cacheKey = od ? `od:${scale}` : transport ? "transport:tract" : scale;
   const datasetLabel = od ? "origin-destination" : transport ? "transportation" : "household income";
   const definition = IncomeModel.scales[scale];
   const state = document.getElementById("income-state");
@@ -175,6 +180,8 @@ async function loadIncome() {
     `Interactive ${datasetLabel} map of NYC ${definition.plural}`);
   retry.hidden = true;
   incomeSelector.disabled = true;
+  document.getElementById("od-show-all").disabled = true;
+  document.getElementById("od-show-all-control").hidden = !(od && scale === "neighborhood");
   map.closePopup();
   if (incomeData?.metadata.dataset === "lodes_origin_destination") clearOriginDestination();
   incomeGroup.clearLayers();
@@ -187,14 +194,19 @@ async function loadIncome() {
     let data = incomeCache.get(cacheKey);
     if (!data) {
       const fetchData = async (file) => {
-        const response = await fetch(`assets/income/${file}?v=data-od-v1`, {
+        const response = await fetch(`assets/income/${file}?v=data-od-v3`, {
           cache: "no-cache", signal: incomeController.signal,
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
       if (od) {
-        data = OriginDestinationModel.normalize(await fetchData("origin-destination.json"));
+        const [payload, boundaries] = await Promise.all([
+          fetchData(scale === "neighborhood" ? "origin-destination-nta.json" : "origin-destination.json"),
+          fetchData(`od-boundaries-${scale}.json`),
+        ]);
+        data = OriginDestinationModel.normalize(payload, scale);
+        data = { ...data, boundaries: OriginDestinationModel.normalizeBoundaries(boundaries, data, scale) };
       } else if (transport) {
         const [payload, geography] = await Promise.all([
           fetchData("transport-tracts.json"),
@@ -208,9 +220,9 @@ async function loadIncome() {
       incomeCache.set(cacheKey, data);
     }
     if (request !== incomeRequest) return;
-    const reference = scale === "neighborhood"
+    const reference = !od && scale === "neighborhood"
       ? data.features.find((feature) => feature.properties.geoid === "MN0801-RI")?.properties : null;
-    if (scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
+    if (!od && scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
     L.geoJSON(data, {
       renderer: L.canvas({ padding: 0.3 }),
       style: incomeMapStyle,
@@ -251,15 +263,16 @@ async function loadIncome() {
     if (od) {
       const { min_link_width_px: minimum, max_link_width_px: maximum } = data.metadata.display;
       document.getElementById("od-width-legend").textContent =
-        `Fixed linear scale across origins: ${minimum} px minimum + count / ${incomeNumber(data.metadata.max_pair_jobs)} x ${(maximum - minimum).toFixed(1)} px.`;
+        `Fixed square-root scale across origins at this geography (${incomeNumber(data.metadata.max_pair_jobs)} links at maximum size): ${minimum}-${maximum} px lines and ${data.metadata.display.min_node_radius_px}-${data.metadata.display.max_node_radius_px} px destination radii. Larger counts give thicker lines and larger nodes; exact counts are in tooltips and the table.`;
     }
     incomeSelector.disabled = false;
+    document.getElementById("od-show-all").disabled = !(od && scale === "neighborhood");
     if (document.body.dataset.mode === "income") {
       incomeGroup.addTo(map);
       fitIncomeMap();
     }
     state.textContent = od
-      ? `${incomeNumber(data.features.length)} origin tracts loaded. Select a tract to show its NYC connections.`
+      ? `${incomeNumber(data.features.length)} origin ${scale === "neighborhood" ? "NTA areas" : "tracts"} loaded. Select an area to show its NYC connections.`
       : `${incomeNumber(data.features.length)} NYC ${definition.plural} loaded. Click a polygon or choose an area.`;
   } catch (error) {
     if (request !== incomeRequest || error.name === "AbortError") return;
@@ -280,15 +293,16 @@ incomeScale.addEventListener("change", loadIncome);
 incomeDataset.addEventListener("change", () => {
   const transport = incomeDataset.value === "transport";
   const od = incomeDataset.value === "od";
-  const tractOnly = transport || od;
-  if (tractOnly) {
-    if (!incomeScale.disabled) householdScale = incomeScale.value;
-    incomeScale.value = "tract";
-  } else {
-    incomeScale.value = householdScale;
+  const nonHousehold = transport || od;
+  if (incomePreviousDataset === "household") householdScale = incomeScale.value;
+  if (incomePreviousDataset === "od") originDestinationScale = incomeScale.value;
+  incomeScale.value = od ? originDestinationScale : transport ? "tract" : householdScale;
+  incomeScale.disabled = transport;
+  for (const option of incomeScale.options ?? []) {
+    option.disabled = od ? !["tract", "neighborhood"].includes(option.value) : transport && option.value !== "tract";
   }
-  incomeScale.disabled = tractOnly;
-  document.querySelectorAll("[data-household-copy]").forEach((node) => { node.hidden = tractOnly; });
+  incomePreviousDataset = incomeDataset.value;
+  document.querySelectorAll("[data-household-copy]").forEach((node) => { node.hidden = nonHousehold; });
   document.getElementById("transport-source-note").hidden = !transport;
   document.getElementById("od-source-note").hidden = !od;
   document.getElementById("od-controls").hidden = !od;

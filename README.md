@@ -82,8 +82,9 @@ only when an area is opened. Failed loads clear the layer and offer Retry.
 
 ### Origin-destination (LODES)
 
-Select **origin-destination** in the Data dropdown. This view is locked to
-**census tracts**, with just **30 selectable origins** initially visible:
+Select **origin-destination** in the Data dropdown. Choose **Census tract** or
+**Neighborhood (NTA)** in the area-scale selector. Tract scale initially shows
+only **30 selectable origins**; NTA scale shows only **four origin areas**:
 
 | Origin area | 2020 NTA / custom area | Tracts |
 |---|---|---:|
@@ -92,14 +93,58 @@ Select **origin-destination** in the Data dropdown. This view is locked to
 | Old Astoria-Hallets Point | QN0102 | 6 |
 | Roosevelt Island | Custom MN0801-RI: 238.02, 238.03, 238.04 | 3 |
 
+At **NTA scale**, both residence origins and workplace destinations aggregate to
+the 2020 NTA relationships, with Roosevelt Island separated from the remainder
+of Upper East Side-Lenox Hill **at both ends**. The resulting 263 destination
+areas include special NTAs and the custom island split. Four origin areas
+connect through **830 NTA pairs**, preserving all **42,310 NYC primary-job links**.
+The **1,095 within-NTA links** are loops (including flows between different
+tracts inside the same NTA). The original tract view remains available.
+
+At NTA scale, **Show all four study-origin NTAs** draws all 830 pairs together
+without changing map zoom or position. Four connection colors identify the
+individual origins; origin nodes are orange and destination nodes are blue,
+with origin-specific counts retained even where destination
+nodes overlap. All origins use the same NTA count-to-size scale. Per-origin
+summaries and full destination tables remain expandable below the color labels.
+This does not add other NYC areas as residence origins.
+At both tract and NTA scales, unfilled purple outlines show exactly the
+destination areas in the displayed connections (including within-area links).
+All-origin outlines are deduplicated across origins. Native 2020 TIGER tract
+polygons and their existing NTA unions are used, including the Roosevelt Island
+split; no ACS boundary substitution or simplification is applied. These
+noninteractive outlines do not intercept origin selection and clear with the
+connections. Boundary assets load only with their corresponding OD scale;
+missing or invalid boundaries produce the standard Data error and Retry state.
+Unchecking hides all connections without moving the map; selecting a polygon
+or an origin from the dropdown returns to its single-origin diagram and unchecks
+the toggle. Home/Clear selection resets the view and turns it off. Scale,
+dataset and mode changes clear it; the control is unavailable outside NTA OD.
+
+The [NTA snapshot](assets/income/origin-destination-nta.json) is about **104 KiB**
+and loads only on choosing NTA scale. It has four origin polygons, compact
+destination nodes and exact aggregated counts. Native 2020 tract polygons are
+unioned in EPSG:2263 before computing NTA centroids; the income layer's 2024
+geometry is not substituted. Every source tract has exactly one NTA assignment.
+The companion `01_sites/export_origin_destination_ntas.py` writes immutable
+`nta_flows.parquet`, `ntas.parquet` and the web snapshot, using the existing
+validated tract outputs and relationship workbook. All NYC jobs, resident totals
+and outside-NYC exclusions reconcile with the tract view.
+
 Select a polygon or use the keyboard-accessible tract dropdown to reveal that
-tract's residents-to-workplace connections. Orange is the residence origin;
-blue nodes are NYC workplace tract centroids. **All positive destination pairs
+area's residents-to-workplace connections. Orange is the residence origin;
+blue nodes are NYC workplace centroids at the selected scale. **All positive destination pairs
 are shown**, not just the largest or a thresholded subset. Line widths follow
-one fixed linear scale across selections: `0.6 + jobs / 185 * 15.4` CSS pixels.
-This keeps small flows visible; widths are count-dependent, not a literal
-ratio without a minimum. Tooltips and an expandable destination table give exact
-counts and shares. Within-tract links are retained as loops. Lines are schematic
+one fixed square-root scale across selections **within each geography**:
+`0.6 + sqrt(jobs / max_pair_jobs) * 15.4` CSS pixels.
+Destination node radii use `1.2 + sqrt(jobs / max_pair_jobs) * 6.8` CSS pixels;
+the verified maximum is **185** at tract scale and **4,332** at NTA scale.
+Sizes should not be compared across scales as though their denominators matched.
+low-count destinations are smaller, while the orange origin stays a distinct
+fixed-size marker. The square-root scale makes differences among the many small
+counts visible without rescaling each origin. These are cartographic sizes, not
+literal count ratios. Tooltips and an expandable destination table give exact
+counts and shares. Within-area links are retained as loops. Lines are schematic
 connections, not routes. Nodes use geometric centroids computed in EPSG:2263,
 which can lie outside irregular or multipart tract polygons.
 
@@ -124,11 +169,16 @@ an official standalone NTA.
 
 Selecting an origin replaces the diagram without changing map zoom or position,
 whether selected through the dropdown or by clicking its polygon. **Home**, **Clear selection**,
-or the blank dropdown choice removes nodes/connections and fits the 30 origins.
+or the blank dropdown choice removes nodes/connections and fits the origins at
+the chosen scale (30 tracts or four NTA areas).
 Leaving Data or changing datasets also clears selection. Returning starts with
-origins only. The previous household-income scale survives transitions through
-either tract-only dataset. A shared Canvas renderer bounds repeated-selection
+origins only. The previous household-income scale and the chosen OD scale are
+remembered separately when changing datasets. Transportation-by-earnings remains
+tract-only; unsupported scale options are disabled per dataset.
+A shared Canvas renderer bounds repeated-selection
 resource use; only the selected origin's links are drawn.
+OD script/data URLs are versioned so reloading fetches the current camera and
+size behavior rather than reusing the earlier auto-fitting script.
 
 The companion `01_sites/export_origin_destination.py` first profiles source
 columns, keys, nulls, hashes, counts and geometry; `--export` requires approved

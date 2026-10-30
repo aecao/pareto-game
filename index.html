@@ -215,7 +215,7 @@
           </select>
           <p class="section-note" data-household-copy>Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
           <p id="transport-source-note" class="section-note" hidden>Tracts only. B08119 stacks six commute modes by individual earnings (2024 dollars), with original tract 90% MOEs. Beside it, a B08301 pie shows ten commute categories, summed from whole block groups with approximate root-sum-of-squares MOEs. Both use 2020–2024 ACS estimates; their worker universes differ. No Roosevelt Island comparison. Grey means zero estimated workers with earnings, not missing data; areas remain clickable. Home fits NYC. <a href="https://data.census.gov/table/ACSDT5Y2024.B08119">B08119</a> · <a href="https://data.census.gov/table/ACSDT5Y2024.B08301">B08301</a>.</p>
-          <p id="od-source-note" class="section-note" hidden>2023 LODES primary jobs (JT01), native 2020 census tracts. Origins: Long Island City-Hunters Point, Queensbridge-Ravenswood-Dutch Kills, Old Astoria-Hallets Point, and the custom Roosevelt Island area (tracts 238.02, 238.03 and 238.04). Only these 30 origin tracts are shown initially. Select one to reveal its residents' NYC workplace connections. These are job links, not observed daily trips, routes or travel modes. <a href="https://lehd.ces.census.gov/data/lodes/LODES8/ny/">Census LODES source</a>.</p>
+          <p id="od-source-note" class="section-note" hidden>2023 LODES primary jobs (JT01), native 2020 geography. Choose census tracts or Neighborhood (NTA). Origins: Long Island City-Hunters Point, Queensbridge-Ravenswood-Dutch Kills, Old Astoria-Hallets Point, and the custom Roosevelt Island area (tracts 238.02, 238.03 and 238.04). Initially shows only these 30 origin tracts or four NTA areas. At NTA scale both ends are aggregated; Roosevelt Island and the remaining Upper East Side-Lenox Hill are separate custom areas. Selecting an origin reveals its residents' NYC workplace connections without moving the map. These are job links, not observed daily trips, routes or travel modes. <a href="https://lehd.ces.census.gov/data/lodes/LODES8/ny/">Census LODES source</a>.</p>
           <label for="income-scale">Selectable area scale</label>
           <select id="income-scale">
             <option value="block_group">Block group</option>
@@ -229,8 +229,9 @@
           <p id="income-state" role="status" aria-live="polite">Open Data to load neighborhood data.</p>
           <button id="income-retry" class="secondary-button" type="button" hidden>Retry Data</button>
           <div id="od-controls" hidden>
+            <label id="od-show-all-control" hidden><input id="od-show-all" type="checkbox" disabled> Show all four study-origin NTAs</label>
             <button id="od-clear" class="secondary-button" type="button" disabled>Clear selection</button>
-            <p class="section-note">Orange: residence origin. Blue: workplace destinations. Thicker connections mean more primary-job links. <span id="od-width-legend"></span> Within-tract links are loops. All NYC destinations are retained; outside-NYC jobs are counted separately, not drawn. Home or Clear selection hides connections and fits the 30 origins.</p>
+            <p class="section-note">Orange markers: residence origins. Blue markers: workplace destinations. Purple unfilled outlines: displayed destination areas. In all-origins view, connection colors identify the origin as listed below. Thicker connections and larger destination nodes mean more primary-job links. <span id="od-width-legend"></span> Within-area links are loops. All NYC destinations are retained; outside-NYC jobs are counted separately, not drawn. Home or Clear selection hides connections and destination outlines and fits the origin areas.</p>
             <div id="od-selection" aria-live="polite"></div>
           </div>
           <p class="section-note" data-household-copy>Choose a scale, then click a polygon or select an area. Neighborhoods are the default; their charts include an orange Roosevelt Island reference on the same household-count axis. Larger areas sum whole block groups. Home fits all of NYC.</p>
@@ -462,9 +463,9 @@
     <script src="income-model.js?v=data-od-v1"></script>
     <script src="transport-model.js?v=data-transport-v1"></script>
     <script src="transport.js?v=data-transport-v1"></script>
-    <script src="origin-destination-model.js?v=data-od-v1"></script>
-    <script src="income.js?v=data-od-v1"></script>
-    <script src="origin-destination.js?v=data-od-v1"></script>
+    <script src="origin-destination-model.js?v=data-od-v6"></script>
+    <script src="income.js?v=data-od-v6"></script>
+    <script src="origin-destination.js?v=data-od-v6"></script>
     <script src="explore-model.js"></script>
     <script src="explore.js"></script>
   </body>
