@@ -819,6 +819,36 @@ here those are not estimated. No lot area, rentable/gross conversion, existing
 building acquisition/demolition, displacement, affordable-unit requirement,
 bridge cost, subsidy, local cost/price, legal zoning or Siting capacity is inferred.
 Raising the ceiling beyond the economic optimum alone adds no residual value.
+# Population density Data view
+
+The **population** dataset is a simple light-to-dark blue choropleth:
+darker areas have more **people per square mile of land**, not more total
+residents. It uses 2020-2024 ACS five-year **B01003** total population via the
+existing IPUMS NHGIS ds272 extract: **8,483,844 estimated residents** at each
+scale (6,807 block groups, 2,327 tracts, 263 NTA areas). It retains the custom
+Roosevelt Island split and uses the same fixed density bands at every scale:
+under 10,000; 10,000-<25,000; 25,000-<50,000; 50,000-<100,000;
+100,000-<200,000; 200,000+. Zero-population land is the lightest blue.
+Water-only areas remain selectable in gray with undefined density:
+220 block groups, three tracts and one NTA, all with zero residents.
+
+The denominator is official 2024 TIGER `ALAND`, excluding water. Tract/NTA
+density divides summed population by summed land area, never averages member
+densities. Full polygons are retained for selection, so water-inclusive fills
+do not imply residents living on water. Popups show source population,
+land density, land area and 90% MOEs (original at BG scale, approximate root
+sum of squares rounded up for aggregates). These are survey estimates for
+2020-2024, not a 2024 point-in-time census.
+
+Compact count assets in `assets/population` join existing lazy-loaded income
+geometries by exact key coverage; native EPSG:2263 analysis remains in the
+companion pipeline. No duplicate geometry or new point layers are generated.
+Density/area/count validation rejects missing/invalid data with the standard
+Data error and Retry flow. Population has independent scale memory;
+CDTA and borough scales are disabled. Clicking or selecting an area opens its
+details without moving the map; Home fits NYC. Existing commute and jobs
+layers are removed when switching to population.
+
 # Jobs/industry Data view
 
 The **jobs/industry** dataset uses 2023 LODES WAC **JT01 primary workplace jobs**

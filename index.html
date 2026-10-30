@@ -214,6 +214,7 @@
             <option value="od">origin-destination</option>
             <option value="do">destination-origin</option>
             <option value="jobs">jobs/industry</option>
+            <option value="population">population</option>
           </select>
           <p class="section-note" data-household-copy>Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
           <p id="transport-source-note" class="section-note" hidden>Tracts only. B08119 stacks six commute modes by individual earnings (2024 dollars), with original tract 90% MOEs. Beside it, a B08301 pie shows ten commute categories, summed from whole block groups with approximate root-sum-of-squares MOEs. Both use 2020–2024 ACS estimates; their worker universes differ. No Roosevelt Island comparison. Grey means zero estimated workers with earnings, not missing data; areas remain clickable. Home fits NYC. <a href="https://data.census.gov/table/ACSDT5Y2024.B08119">B08119</a> · <a href="https://data.census.gov/table/ACSDT5Y2024.B08301">B08301</a>.</p>
@@ -230,6 +231,10 @@
           <select id="income-block-group" disabled><option value="">Load Data first</option></select>
           <p id="income-state" role="status" aria-live="polite">Open Data to load neighborhood data.</p>
           <button id="income-retry" class="secondary-button" type="button" hidden>Retry Data</button>
+          <div id="population-controls" hidden>
+            <p class="section-note">2020-2024 ACS five-year total population (B01003) via IPUMS NHGIS. Darker blue means greater population density, measured in people per square mile of land. Official TIGER/Line 2024 land area excludes water; the full polygons remain selectable. Block group, tract and NTA scales use the same color breaks. NTA geography includes the custom Roosevelt Island split. Click an area for population, density, land area and survey uncertainty.</p>
+            <div id="population-legend" aria-label="Population density: people per square mile of land"></div>
+          </div>
           <div id="jobs-industry-controls" hidden>
             <label for="jobs-classification">Jobs classification</label>
             <select id="jobs-classification" disabled>
@@ -471,7 +476,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
-    <script src="siting.js?v=jobs-v1"></script>
+    <script src="siting.js?v=population-v1"></script>
     <script src="connectivity-model.js?v=three-bridges-v9"></script>
     <script src="connectivity.js?v=three-bridges-v9"></script>
     <script src="market-model.js"></script>
@@ -488,7 +493,9 @@
     <script src="transport.js?v=data-transport-v1"></script>
     <script src="origin-destination-model.js?v=data-od-v11"></script>
     <script src="jobs-industry-model.js?v=jobs-v6"></script>
-    <script src="income.js?v=data-hit-testing-v1"></script>
+    <script src="population-model.js?v=population-v1"></script>
+    <script src="income.js?v=population-v1"></script>
+    <script src="population.js?v=population-v1"></script>
     <script src="jobs-industry.js?v=jobs-v6"></script>
     <script src="origin-destination.js?v=data-hit-testing-v1"></script>
     <script src="explore-model.js"></script>

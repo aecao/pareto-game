@@ -141,6 +141,7 @@ function harness(fetch) {
     project: () => ({ x: 100, y: 100 }), unproject: (p) => p,
   };
   const context = {
+    PopulationModel: require("../population-model.js"),
     JobsIndustryModel: require("../jobs-industry-model.js"),
     JobsIndustryLayer: class {
       constructor(data) { this.data = data; }
@@ -175,12 +176,16 @@ function harness(fetch) {
   };
   vm.createContext(context);
   vm.runInContext(read("income.js"), context);
+  vm.runInContext(read("population.js"), context);
   vm.runInContext(read("origin-destination.js"), context);
   return { context, get, map, group: groups[0], overlay: groups[1] };
 }
 const settle = () => new Promise(setImmediate);
 const respond = async (url) => ({
   ok: true, json: async () => url.includes("od-boundaries-neighborhood") ? ntaBoundaries
+    : url.includes("assets/population/") ? JSON.parse(read(`assets/population/${url.match(/population\/([^?]+)/)[1]}`))
+    : url.includes("income/block-groups") ? JSON.parse(read("assets/income/block-groups.json"))
+    : url.includes("income/geographies/tract") ? JSON.parse(read("assets/income/geographies/tract.json"))
     : url.includes("jobs_industry/categories-neighborhood") ? JSON.parse(read("assets/jobs_industry/categories-neighborhood.json"))
     : url.includes("jobs_industry/categories-tract") ? JSON.parse(read("assets/jobs_industry/categories-tract.json"))
     : url.includes("jobs_industry/neighborhood") ? jobsNta
@@ -189,6 +194,82 @@ const respond = async (url) => ({
     : url.includes("destination-origin-nta") ? incomingNta
     : url.includes("destination-origin") ? incoming
     : url.includes("origin-destination-nta") ? ntaData : url.includes("origin-destination") ? data : neighborhood,
+});
+
+test("population loads lazily at BG/tract/NTA scales, styles density, renders details and remembers its own scale", async () => {
+  const calls = [];
+  const { context, get, group, map } = harness(async url => { calls.push(url); return respond(url); });
+  await context.loadIncome();
+  assert.ok(calls.every(url => !url.includes("population")));
+  get("income-dataset").value = "population";
+  get("income-dataset").listeners.change();
+  await settle();
+  assert.equal(get("population-controls").hidden, false);
+  assert.equal(get("od-controls").hidden, true);
+  assert.equal(get("jobs-industry-controls").hidden, true);
+  assert.deepEqual(get("income-scale").options.filter(o => !o.disabled).map(o => o.value), ["block_group", "tract", "neighborhood"]);
+  assert.equal(group.layers.length, 263);
+  assert.equal(get("population-legend").children.length, 7);
+  assert.match(get("income-state").textContent, /8,483,844 estimated residents/);
+  for (const scale of ["tract", "block_group"]) {
+    get("income-scale").value = scale;
+    await get("income-scale").listeners.change();
+    assert.equal(group.layers.length, scale === "tract" ? 2327 : 6807);
+    const land = group.layers.find(l => l.feature.properties.density > 0);
+    const water = group.layers.find(l => l.feature.properties.density === null);
+    assert.equal(water.options.style(water.feature).fillColor, "#bdbdbd");
+    assert.notEqual(land.options.style(land.feature).fillColor, "#bdbdbd");
+    let cameraCalls = 0;
+    map.fitBounds = () => { cameraCalls++; };
+    context.openIncomeArea(land.feature.properties.geoid);
+    assert.equal(cameraCalls, 0, "population selection preserves camera");
+    assert.equal(get("income-block-group").value, land.feature.properties.geoid);
+    const text = node => node.textContent + node.children.map(text).join("");
+    assert.match(text(land.render()), /people per square mile of land/);
+    assert.match(text(land.render()), /90% margin of error/);
+    assert.match(text(water.render()), /density is not applicable/);
+  }
+  get("income-dataset").value = "od";
+  get("income-dataset").listeners.change();
+  await settle();
+  assert.equal(group.layers.length, 30);
+  get("income-dataset").value = "population";
+  get("income-dataset").listeners.change();
+  await settle();
+  assert.equal(get("income-scale").value, "block_group");
+  assert.equal(group.layers.length, 6807);
+  assert.equal(calls.filter(url => url.includes("assets/population/block_group")).length, 1);
+});
+
+test("population failures and late responses cannot leave partial or stale Data layers", async () => {
+  let release;
+  const pending = new Promise(resolve => { release = resolve; });
+  let fail = true;
+  const { context, get, group } = harness(async url => {
+    if (url.includes("assets/population/")) {
+      await pending;
+      if (fail) return { ok: false, status: 503 };
+    }
+    return respond(url);
+  });
+  context.console = { error() {} };
+  get("income-dataset").value = "population";
+  get("income-dataset").listeners.change();
+  get("income-dataset").value = "od";
+  get("income-dataset").listeners.change();
+  await settle();
+  release();
+  await settle();
+  assert.equal(group.layers.length, 30);
+  get("income-dataset").value = "population";
+  get("income-dataset").listeners.change();
+  await settle();
+  assert.equal(group.layers.length, 0);
+  assert.equal(get("income-retry").hidden, false);
+  assert.match(get("income-state").textContent, /HTTP 503/);
+  fail = false;
+  await get("income-retry").listeners.click();
+  assert.equal(group.layers.length, 263);
 });
 
 test("jobs data loads lazily, limits scales, restores separate memories and clears on dataset switches", async () => {

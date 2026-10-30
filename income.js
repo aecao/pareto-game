@@ -16,6 +16,7 @@ let incomePreviousDataset = incomeDataset.value;
 let originDestinationScale = "tract";
 let destinationOriginScale = "neighborhood";
 let jobsIndustryScale = "neighborhood";
+let populationScale = "neighborhood";
 let originDestinationMinimum = 1;
 const incomeNumber = (value) => value.toLocaleString("en-US");
 
@@ -129,7 +130,11 @@ function incomePopup(feature, reference = null) {
   return wrapper;
 }
 
-function incomeMapStyle(feature) {
+function incomeMapStyle(feature, metadata = incomeData?.metadata) {
+  if (feature.properties.dataset === "population") {
+    return { color: "#52677e", weight: 0.5,
+      fillColor: PopulationModel.color(feature.properties.density, metadata), fillOpacity: 0.8 };
+  }
   if (feature.properties.dataset === "jobs") {
     return { color: "#777", weight: 0.6, fillColor: "#fff", fillOpacity: 0.02 };
   }
@@ -163,7 +168,9 @@ function openIncomeArea(geoid) {
     return;
   }
   incomeSelector.value = geoid;
-  map.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 15, animate: false });
+  if (incomeData?.metadata.dataset !== "population") {
+    map.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 15, animate: false });
+  }
   layer.openPopup();
 }
 
@@ -190,12 +197,14 @@ async function loadIncome() {
   const transport = incomeDataset.value === "transport";
   const reverse = incomeDataset.value === "do";
   const jobs = incomeDataset.value === "jobs";
+  const population = incomeDataset.value === "population";
   const od = incomeDataset.value === "od" || reverse;
-  if ((transport && scale !== "tract") || ((od || jobs) && !["tract", "neighborhood"].includes(scale))) {
+  if ((transport && scale !== "tract") || ((od || jobs) && !["tract", "neighborhood"].includes(scale)) ||
+      (population && !["block_group", "tract", "neighborhood"].includes(scale))) {
     throw new Error("Unsupported geography for this dataset.");
   }
-  const cacheKey = od || jobs ? `${incomeDataset.value}:${scale}` : transport ? "transport:tract" : scale;
-  const datasetLabel = jobs ? "jobs/industry" : reverse ? "destination-origin" : od ? "origin-destination" : transport ? "transportation" : "household income";
+  const cacheKey = od || jobs || population ? `${incomeDataset.value}:${scale}` : transport ? "transport:tract" : scale;
+  const datasetLabel = population ? "population density" : jobs ? "jobs/industry" : reverse ? "destination-origin" : od ? "origin-destination" : transport ? "transportation" : "household income";
   const definition = IncomeModel.scales[scale];
   const state = document.getElementById("income-state");
   const retry = document.getElementById("income-retry");
@@ -235,7 +244,19 @@ async function loadIncome() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      if (jobs) {
+      if (population) {
+        const [counts, geography] = await Promise.all([
+          (async () => {
+            const response = await fetch(`assets/population/${scale}.json?v=population-v1`, {
+              cache: "no-cache", signal: incomeController.signal,
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+          })(),
+          incomeCache.has(scale) ? incomeCache.get(scale) : fetchData(definition.file),
+        ]);
+        data = PopulationModel.normalize(counts, geography, scale);
+      } else if (jobs) {
         const [geometry, categories] = await Promise.all([`${scale}.json`, `categories-${scale}.json`].map(async file => {
           const response = await fetch(`assets/jobs_industry/${file}?v=jobs-v5`, {
             cache: "no-cache", signal: incomeController.signal,
@@ -264,15 +285,25 @@ async function loadIncome() {
       incomeCache.set(cacheKey, data);
     }
     if (request !== incomeRequest) return;
-    const reference = !od && !jobs && scale === "neighborhood"
+    const reference = !od && !jobs && !population && scale === "neighborhood"
       ? data.features.find((feature) => feature.properties.geoid === "MN0801-RI")?.properties : null;
-    if (!od && !jobs && scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
+    if (!od && !jobs && !population && scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
     L.geoJSON(data, {
       renderer: incomeAreaRenderer,
-      style: incomeMapStyle,
+      style: feature => incomeMapStyle(feature, data.metadata),
       onEachFeature(feature, layer) {
         const p = feature.properties;
         const label = p.scale ? p.name : `${p.borough} ${p.name}`;
+        if (population) {
+          layer.bindTooltip(`${label}: ${p.density === null ? "no land area; density not applicable"
+            : `${incomeNumber(Math.round(p.density))} people per land sq mile`}`);
+          layer.bindPopup(() => populationPopup(feature), {
+            className: "income-popup", maxHeight: 500, minWidth: 260, maxWidth: 420, autoPan: false,
+          });
+          layer.on("click", () => { incomeSelector.value = p.geoid; });
+          incomeAreaLayers.set(p.geoid, layer);
+          return;
+        }
         if (jobs) {
           layer.bindTooltip(`${label}: ${incomeNumber(p.total)} primary jobs`);
           layer.bindPopup(() => {
@@ -316,6 +347,7 @@ async function loadIncome() {
       incomeSelector.append(incomeNode("option", label, null, { value: p.geoid }));
     }
     incomeData = data;
+    if (population) populationLegend(data);
     if (jobs) {
       jobsIndustryLegend(data);
       document.getElementById("jobs-classification").disabled = false;
@@ -337,7 +369,9 @@ async function loadIncome() {
       incomeGroup.addTo(map);
       fitIncomeMap();
     }
-    state.textContent = od
+    state.textContent = population
+      ? `${incomeNumber(data.metadata.total_population)} estimated residents across ${incomeNumber(data.features.length)} ${definition.plural}. Darker means greater population per square mile of land.`
+      : od
       ? `${incomeNumber(data.features.length)} ${reverse ? "workplace" : "origin"} ${scale === "neighborhood" ? "NTA areas" : "tracts"} loaded. Select an area to show its NYC connections.`
       : `${incomeNumber(data.features.length)} NYC ${definition.plural} loaded. Click a polygon or choose an area.`;
   } catch (error) {
@@ -360,16 +394,19 @@ incomeDataset.addEventListener("change", () => {
   const transport = incomeDataset.value === "transport";
   const reverse = incomeDataset.value === "do";
   const jobs = incomeDataset.value === "jobs";
+  const population = incomeDataset.value === "population";
   const od = incomeDataset.value === "od" || reverse;
-  const nonHousehold = transport || od || jobs;
+  const nonHousehold = transport || od || jobs || population;
   if (incomePreviousDataset === "household") householdScale = incomeScale.value;
   if (incomePreviousDataset === "od") originDestinationScale = incomeScale.value;
   if (incomePreviousDataset === "do") destinationOriginScale = incomeScale.value;
   if (incomePreviousDataset === "jobs") jobsIndustryScale = incomeScale.value;
-  incomeScale.value = jobs ? jobsIndustryScale : reverse ? destinationOriginScale : od ? originDestinationScale : transport ? "tract" : householdScale;
+  if (incomePreviousDataset === "population") populationScale = incomeScale.value;
+  incomeScale.value = population ? populationScale : jobs ? jobsIndustryScale : reverse ? destinationOriginScale : od ? originDestinationScale : transport ? "tract" : householdScale;
   incomeScale.disabled = transport;
   for (const option of incomeScale.options ?? []) {
-    option.disabled = od || jobs ? !["tract", "neighborhood"].includes(option.value) : transport && option.value !== "tract";
+    option.disabled = population ? !["block_group", "tract", "neighborhood"].includes(option.value)
+      : od || jobs ? !["tract", "neighborhood"].includes(option.value) : transport && option.value !== "tract";
   }
   incomePreviousDataset = incomeDataset.value;
   document.querySelectorAll("[data-household-copy]").forEach((node) => { node.hidden = nonHousehold; });
@@ -377,6 +414,7 @@ incomeDataset.addEventListener("change", () => {
   document.getElementById("od-source-note").hidden = !od || reverse;
   document.getElementById("od-controls").hidden = !od;
   document.getElementById("jobs-industry-controls").hidden = !jobs;
+  document.getElementById("population-controls").hidden = !population;
   document.getElementById("nhgis-citation").hidden = od || jobs;
   document.getElementById("data-source-eyebrow").textContent = od || jobs ? "DATA / LODES 2023" : "DATA / ACS 2024";
   loadIncome();
