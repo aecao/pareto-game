@@ -130,10 +130,12 @@ function harness(fetch) {
   };
   const line = (kind, points, options) => ({
     kind, points, options, bindTooltip(tooltip) { this.tooltip = tooltip; return this; },
+    handlers: {}, on(event, handler) { this.handlers[event] = handler; return this; },
     addTo(parent) { parent.addLayer(this); return this; },
   });
   const map = {
     panes: {}, createPane(name) { return this.panes[name] = { style: {} }; },
+    getPane(name) { return this.panes[name]; },
     active: null, closePopup() {}, removeLayer() { this.active = null; },
     setMinZoom() {}, setMaxBounds() {}, invalidateSize() {}, fitBounds() {},
     project: () => ({ x: 100, y: 100 }), unproject: (p) => p,
@@ -151,7 +153,8 @@ function harness(fetch) {
       createElementNS: (ns, tag) => new Node(tag, ns),
     },
     L: {
-      featureGroup: makeGroup, canvas: (options) => ({ options }), latLngBounds: () => bounds,
+      featureGroup: makeGroup, canvas: (options) => ({ options, kind: "canvas" }),
+      svg: (options) => ({ options, kind: "svg" }), latLngBounds: () => bounds,
       latLng: (lat, lng) => ({ lat, lng }), point: (x, y) => ({ x, y }),
       polyline: (points, options) => line("link", points, options),
       circleMarker: (point, options) => line("node", point, options),
@@ -373,11 +376,13 @@ test("selectable-area links use a brighter upper pane in both directions and sca
     assert.ok(highlighted.every(l => l.options.opacity > 0.2 && l.options.opacity <= 0.95 &&
       l.options.renderer.options.pane === "od-key-connections"));
     assert.ok(overlay.layers.filter(l => l.kind === "link" && l.options.color !== "#e000ff")
-      .every(l => l.options.opacity > 0.08 && l.options.opacity <= 0.55 && !l.options.renderer.options.pane));
+      .every(l => l.options.opacity > 0.08 && l.options.opacity <= 0.55 && l.options.renderer.options.pane === "od-connections"));
     assert.ok(overlay.layers.filter(l => l.kind === "link")
       .every(l => l.options.interactive === false && l.tooltip === undefined));
     assert.ok(overlay.layers.filter(l => l.kind === "node")
-      .every(l => l.options.renderer.options.pane === "od-nodes"));
+      .every(l => l.options.renderer.options.pane === "od-nodes" && l.options.renderer.kind === "svg"));
+    assert.equal(map.panes["od-connections"].style.pointerEvents, "none");
+    assert.equal(map.panes["od-key-connections"].style.pointerEvents, "none");
     assert.equal(Number(map.panes["od-key-connections"].style.zIndex), 410);
     assert.ok(Number(map.panes["od-nodes"].style.zIndex) > 410);
     get("od-threshold-number").value = String(snapshot.metadata.max_pair_jobs);
@@ -407,6 +412,42 @@ test("connection opacity grows with count on fixed scale and key links remain br
       assert.throws(() => model.linkOpacity(value, m));
     }
   }
+});
+
+test("Data reuses one polygon canvas across reloads while selectable SVG nodes change commute selection", async () => {
+  const { context, get, group, overlay, map } = harness(respond);
+  const renderers = [];
+  for (const [dataset, scale, snapshot] of [
+    ["od", "tract", data], ["od", "neighborhood", ntaData],
+    ["do", "neighborhood", incomingNta], ["do", "tract", incoming],
+  ]) {
+    get("income-dataset").value = dataset;
+    get("income-dataset").listeners.change();
+    await settle();
+    get("income-scale").value = scale;
+    await get("income-scale").listeners.change();
+    renderers.push(group.layers.find(l => l.kind === "area").options.renderer);
+    const selectable = new Set(snapshot.features.map(f => f.properties.geoid));
+    const source = snapshot.features.find(f => f.properties.flows.some(flow =>
+      flow.destination !== f.properties.geoid && selectable.has(flow.destination)));
+    context.openIncomeArea(source.properties.geoid);
+    const destination = source.properties.flows.find(flow =>
+      flow.destination !== source.properties.geoid && selectable.has(flow.destination));
+    const marker = overlay.layers.find(l => l.kind === "node" && l.handlers.click &&
+      l.points[0] === snapshot.nodes[destination.destination].center[1] &&
+      l.points[1] === snapshot.nodes[destination.destination].center[0]);
+    assert.ok(marker, "selectable endpoint has a direct click handler, without a canvas hit-testing surface");
+    const before = overlay.layers.length;
+    marker.handlers.click();
+    assert.equal(get("income-block-group").value, destination.destination);
+    assert.ok(overlay.layers.length > 0 && before > 0);
+    const otherMarker = overlay.layers.find(l => l.kind === "node" && !l.handlers.click &&
+      l.options.fillColor === "#375a9e");
+    assert.ok(otherMarker?.tooltip, "nonselectable linked nodes still show tooltips");
+  }
+  assert.ok(renderers.every(renderer => renderer === renderers[0]), "reloads must not stack empty hit-testing canvases");
+  assert.equal(map.panes["od-connections"].style.pointerEvents, "none");
+  assert.equal(map.panes["od-key-connections"].style.pointerEvents, "none");
 });
 
 test("native destination boundaries cover every node and reject wrong scale, omissions, duplicates and invalid geometry", () => {

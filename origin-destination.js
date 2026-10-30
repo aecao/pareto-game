@@ -1,11 +1,14 @@
 "use strict";
 
 const originDestinationGroup = L.featureGroup();
-const originDestinationRenderer = L.canvas({ padding: 0.3 });
+map.createPane("od-connections").style.zIndex = "405";
+map.getPane("od-connections").style.pointerEvents = "none";
 map.createPane("od-key-connections").style.zIndex = "410";
+map.getPane("od-key-connections").style.pointerEvents = "none";
 map.createPane("od-nodes").style.zIndex = "420";
+const originDestinationRenderer = L.canvas({ padding: 0.3, pane: "od-connections" });
 const originDestinationKeyRenderer = L.canvas({ padding: 0.3, pane: "od-key-connections" });
-const originDestinationNodeRenderer = L.canvas({ padding: 0.3, pane: "od-nodes" });
+const originDestinationNodeRenderer = L.svg({ padding: 0.3, pane: "od-nodes" });
 let originDestinationSelected = null;
 
 function visibleOriginDestinationFlows(p) {
@@ -96,12 +99,15 @@ function drawOriginDestination(p, color = "#375a9e") {
   for (const flow of flows) {
     if (flow.destination === geoid) continue;
     const node = nodes[flow.destination];
-    L.circleMarker([node.center[1], node.center[0]], {
+    const marker = L.circleMarker([node.center[1], node.center[0]], {
       renderer: originDestinationNodeRenderer, radius: OriginDestinationModel.nodeRadius(flow.jobs, metadata),
       color: "#fff", weight: 0.5, fillColor: "#375a9e", fillOpacity: 0.9,
       bubblingMouseEvents: false,
     }).bindTooltip(incomeNode("span", `${node.name}: ${incomeNumber(flow.jobs)} primary-job links ${reverse ? "to" : "from"} ${p.name}`, null))
       .addTo(originDestinationGroup);
+    if (incomeAreaLayers.has(flow.destination)) {
+      marker.on("click", () => selectOriginDestination(flow.destination));
+    }
   }
   L.circleMarker(origin, {
     renderer: originDestinationNodeRenderer,

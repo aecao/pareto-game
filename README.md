@@ -124,6 +124,15 @@ not changes to job counts. All lines and loops are noninteractive and have no
 line tooltips, allowing clicks through to selectable polygons; node tooltips
 and complete count tables remain available.
 
+Commute lines/outlines use canvas panes with CSS pointer events disabled,
+not only noninteractive Leaflet paths: an otherwise empty canvas can still
+intercept polygon clicks. Nodes use SVG in the upper pane so only the actual
+marker shapes receive pointer events; tooltips remain available, and clicking
+a linked node belonging to the selectable areas selects that area. All Data
+geographies/datasets reuse one polygon renderer instead of stacking empty
+canvases on reload. These hit-testing rules preserve polygon selection after
+changing datasets, scales, selections, and returning to Data.
+
 The separate **destination-origin** dataset reverses the selection: choose a
 workplace NTA (or one of its native 2020 tracts) to show its NYC residence
 origins. Selectable areas are Financial District-Battery Park City,

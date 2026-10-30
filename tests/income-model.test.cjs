@@ -167,7 +167,7 @@ function descendants(node, tag) {
 }
 test("popup renders a filled line, dollar ticks and source-range details with exact MOEs", () => {
   const context = {
-    IncomeModel: model, L: { featureGroup: () => ({}) },
+    IncomeModel: model, L: { featureGroup: () => ({}), canvas: options => ({ options }) },
     document: { createElement: (tag) => new Node(tag), createElementNS: (ns, tag) => new Node(tag, ns),
       getElementById: () => new Node("select") },
   };

@@ -2,6 +2,7 @@
 
 let incomeData = null;
 const incomeGroup = L.featureGroup();
+const incomeAreaRenderer = L.canvas({ padding: 0.3 });
 const incomeAreaLayers = new Map();
 const incomeCache = new Map();
 let incomeHomeBounds = null;
@@ -267,7 +268,7 @@ async function loadIncome() {
       ? data.features.find((feature) => feature.properties.geoid === "MN0801-RI")?.properties : null;
     if (!od && !jobs && scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
     L.geoJSON(data, {
-      renderer: L.canvas({ padding: 0.3 }),
+      renderer: incomeAreaRenderer,
       style: incomeMapStyle,
       onEachFeature(feature, layer) {
         const p = feature.properties;
