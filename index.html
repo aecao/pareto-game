@@ -25,7 +25,7 @@
         <button type="button" data-mode="connectivity" aria-pressed="false">Connectivity</button>
         <button type="button" data-mode="market" aria-pressed="false">Market</button>
         <button type="button" data-mode="housing" aria-pressed="false">Housing</button>
-        <button type="button" data-mode="income" aria-pressed="false">Income</button>
+        <button type="button" data-mode="income" aria-pressed="false">Data</button>
       </nav>
     </header>
 
@@ -204,10 +204,18 @@
           <p id="housing-state" role="status" aria-live="polite">Open Housing to load data.</p>
           <p class="section-note"><a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6qlE4hFULSfzCQ9ZwbQqA8jIEkcfJMfg8Ro4GulHRZpl9oRDl6ank0QavwYA8U6AFXdJFELQNdP1y/pubhtml?gid=2081099550">Developments source</a> · <a href="https://docs.google.com/spreadsheets/d/e/2PACX-1vR6qlE4hFULSfzCQ9ZwbQqA8jIEkcfJMfg8Ro4GulHRZpl9oRDl6ank0QavwYA8U6AFXdJFELQNdP1y/pubhtml?gid=898231653">Buildings source</a></p>
         </section>
-        <section class="panel-section income-only" hidden aria-label="Income sources">
-          <span class="eyebrow">INCOME / ACS 2024</span>
-          <h1>Income</h1>
-          <p class="section-note">Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
+        <section class="panel-section income-only" hidden aria-label="Data sources">
+          <span id="data-source-eyebrow" class="eyebrow">DATA / ACS 2024</span>
+          <h1>Data</h1>
+          <label for="income-dataset">Dataset</label>
+          <select id="income-dataset">
+            <option value="household">Household income</option>
+            <option value="transport">Transportation by earnings + commute modes</option>
+            <option value="od">origin-destination</option>
+          </select>
+          <p class="section-note" data-household-copy>Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
+          <p id="transport-source-note" class="section-note" hidden>Tracts only. B08119 stacks six commute modes by individual earnings (2024 dollars), with original tract 90% MOEs. Beside it, a B08301 pie shows ten commute categories, summed from whole block groups with approximate root-sum-of-squares MOEs. Both use 2020–2024 ACS estimates; their worker universes differ. No Roosevelt Island comparison. Grey means zero estimated workers with earnings, not missing data; areas remain clickable. Home fits NYC. <a href="https://data.census.gov/table/ACSDT5Y2024.B08119">B08119</a> · <a href="https://data.census.gov/table/ACSDT5Y2024.B08301">B08301</a>.</p>
+          <p id="od-source-note" class="section-note" hidden>2023 LODES primary jobs (JT01), native 2020 census tracts. Origins: Long Island City-Hunters Point, Queensbridge-Ravenswood-Dutch Kills, Old Astoria-Hallets Point, and the custom Roosevelt Island area (tracts 238.02, 238.03 and 238.04). Only these 30 origin tracts are shown initially. Select one to reveal its residents' NYC workplace connections. These are job links, not observed daily trips, routes or travel modes. <a href="https://lehd.ces.census.gov/data/lodes/LODES8/ny/">Census LODES source</a>.</p>
           <label for="income-scale">Selectable area scale</label>
           <select id="income-scale">
             <option value="block_group">Block group</option>
@@ -217,15 +225,20 @@
             <option value="borough">Borough</option>
           </select>
           <label id="income-area-label" for="income-block-group">Open a neighborhood</label>
-          <select id="income-block-group" disabled><option value="">Load Income first</option></select>
-          <p id="income-state" role="status" aria-live="polite">Open Income to load neighborhood data.</p>
-          <button id="income-retry" class="secondary-button" type="button" hidden>Retry Income</button>
-          <p class="section-note">Choose a scale, then click a polygon or select an area. Neighborhoods are the default; their charts include an orange Roosevelt Island reference on the same household-count axis. Larger areas sum whole block groups. Home fits all of NYC.</p>
-          <p class="section-note">Neighborhoods use 2020 NTAs, except Roosevelt Island (tracts 238.02, 238.03 and 238.04), shown separately from Upper East Side-Lenox Hill as a custom split. Districts use CDTAs, census approximations rather than exact community-district boundaries. Special areas and Joint Interest Areas are included. Boundaries are unions of 2024 block-group polygons using the supplied 2020 tract relationships; NTAs/CDTAs may cross borough lines.</p>
-          <p class="section-note">Sixteen income bands; the highest is $200,000 or more. Block-group 90% margins of error are original; larger-area MOEs are approximate (root-sum-of-squares, rounded up). Small-area estimates can be uncertain; zero estimates remain zero.</p>
-          <p class="section-note">Grey: no estimated households. Blue: positive estimated household total. Reported zeros are not missing data; grey areas remain clickable.</p>
-          <p class="section-note">IPUMS NHGIS, University of Minnesota, <a href="https://www.nhgis.org/">www.nhgis.org</a>. Version 21.0 (2026). <a href="https://doi.org/10.18128/D050.V21.0">Citation</a>.</p>
-          <p class="section-note"><a href="https://data.census.gov/table/ACSDT5Y2024.B19001">ACS B19001 definition</a> · <a href="assets/income/block-groups.json" download>Download NYC block-group snapshot</a></p>
+          <select id="income-block-group" disabled><option value="">Load Data first</option></select>
+          <p id="income-state" role="status" aria-live="polite">Open Data to load neighborhood data.</p>
+          <button id="income-retry" class="secondary-button" type="button" hidden>Retry Data</button>
+          <div id="od-controls" hidden>
+            <button id="od-clear" class="secondary-button" type="button" disabled>Clear selection</button>
+            <p class="section-note">Orange: residence origin. Blue: workplace destinations. Thicker connections mean more primary-job links. <span id="od-width-legend"></span> Within-tract links are loops. All NYC destinations are retained; outside-NYC jobs are counted separately, not drawn. Home or Clear selection hides connections and fits the 30 origins.</p>
+            <div id="od-selection" aria-live="polite"></div>
+          </div>
+          <p class="section-note" data-household-copy>Choose a scale, then click a polygon or select an area. Neighborhoods are the default; their charts include an orange Roosevelt Island reference on the same household-count axis. Larger areas sum whole block groups. Home fits all of NYC.</p>
+          <p class="section-note" data-household-copy>Neighborhoods use 2020 NTAs, except Roosevelt Island (tracts 238.02, 238.03 and 238.04), shown separately from Upper East Side-Lenox Hill as a custom split. Districts use CDTAs, census approximations rather than exact community-district boundaries. Special areas and Joint Interest Areas are included. Boundaries are unions of 2024 block-group polygons using the supplied 2020 tract relationships; NTAs/CDTAs may cross borough lines.</p>
+          <p class="section-note" data-household-copy>Sixteen income bands; the highest is $200,000 or more. Block-group 90% margins of error are original; larger-area MOEs are approximate (root-sum-of-squares, rounded up). Small-area estimates can be uncertain; zero estimates remain zero.</p>
+          <p class="section-note" data-household-copy>Grey: no estimated households. Blue: positive estimated household total. Reported zeros are not missing data; grey areas remain clickable.</p>
+          <p id="nhgis-citation" class="section-note">IPUMS NHGIS, University of Minnesota, <a href="https://www.nhgis.org/">www.nhgis.org</a>. Version 21.0 (2026). <a href="https://doi.org/10.18128/D050.V21.0">Citation</a>.</p>
+          <p class="section-note" data-household-copy><a href="https://data.census.gov/table/ACSDT5Y2024.B19001">ACS B19001 definition</a> · <a href="assets/income/block-groups.json" download>Download NYC block-group snapshot</a></p>
         </section>
         <div class="sidebar-footer exploration-only">
           <span class="footer-rule"></span>
@@ -446,8 +459,12 @@
     <script src="far.js"></script>
     <script src="housing-model.js"></script>
     <script src="housing.js"></script>
-    <script src="income-model.js?v=income-scales-v4"></script>
-    <script src="income.js?v=income-scales-v4"></script>
+    <script src="income-model.js?v=data-od-v1"></script>
+    <script src="transport-model.js?v=data-transport-v1"></script>
+    <script src="transport.js?v=data-transport-v1"></script>
+    <script src="origin-destination-model.js?v=data-od-v1"></script>
+    <script src="income.js?v=data-od-v1"></script>
+    <script src="origin-destination.js?v=data-od-v1"></script>
     <script src="explore-model.js"></script>
     <script src="explore.js"></script>
   </body>

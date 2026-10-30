@@ -9,6 +9,8 @@ let incomeRequest = 0;
 let incomeController = null;
 const incomeSelector = document.getElementById("income-block-group");
 const incomeScale = document.getElementById("income-scale");
+const incomeDataset = document.getElementById("income-dataset");
+let householdScale = incomeScale.value;
 const incomeNumber = (value) => value.toLocaleString("en-US");
 
 function incomeNode(tag, text, parent, attributes = {}) {
@@ -131,9 +133,14 @@ function incomeMapStyle(feature) {
 
 function fitIncomeMap() {
   if (!incomeHomeBounds) throw new Error("Income bounds have not loaded.");
+  const od = incomeData?.metadata.dataset === "lodes_origin_destination";
+  if (od) {
+    clearOriginDestination();
+    document.getElementById("income-state").textContent = `${incomeNumber(incomeData.features.length)} origin tracts loaded. Select a tract to show its NYC connections.`;
+  }
   map.closePopup();
   map.setMinZoom(9);
-  map.setMaxBounds(incomeHomeBounds.pad(0.5));
+  map.setMaxBounds((od ? originDestinationBounds() : incomeHomeBounds).pad(0.5));
   map.invalidateSize();
   map.fitBounds(incomeHomeBounds, { padding: [24, 24], animate: false });
 }
@@ -141,6 +148,10 @@ function fitIncomeMap() {
 function openIncomeArea(geoid) {
   const layer = incomeAreaLayers.get(geoid);
   if (!layer) throw new Error(`Unknown income area ${geoid}`);
+  if (incomeData?.metadata.dataset === "lodes_origin_destination") {
+    selectOriginDestination(geoid);
+    return;
+  }
   incomeSelector.value = geoid;
   map.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 15, animate: false });
   layer.openPopup();
@@ -151,13 +162,21 @@ async function loadIncome() {
   if (incomeController) incomeController.abort();
   incomeController = new AbortController();
   const scale = incomeScale.value;
+  const transport = incomeDataset.value === "transport";
+  const od = incomeDataset.value === "od";
+  if ((transport || od) && scale !== "tract") throw new Error("This dataset requires census tract geography.");
+  const cacheKey = od ? "od:tract" : transport ? "transport:tract" : scale;
+  const datasetLabel = od ? "origin-destination" : transport ? "transportation" : "household income";
   const definition = IncomeModel.scales[scale];
   const state = document.getElementById("income-state");
   const retry = document.getElementById("income-retry");
-  state.textContent = `Loading NYC ${definition.plural} household income...`;
+  state.textContent = `Loading NYC ${definition.plural} ${datasetLabel}...`;
+  document.querySelector(".map-shell").setAttribute("aria-label",
+    `Interactive ${datasetLabel} map of NYC ${definition.plural}`);
   retry.hidden = true;
   incomeSelector.disabled = true;
   map.closePopup();
+  if (incomeData?.metadata.dataset === "lodes_origin_destination") clearOriginDestination();
   incomeGroup.clearLayers();
   incomeAreaLayers.clear();
   incomeData = null;
@@ -165,14 +184,28 @@ async function loadIncome() {
   incomeSelector.replaceChildren(incomeNode("option", "Loading areas...", null, { value: "" }));
   document.getElementById("income-area-label").textContent = `Open a ${definition.label.toLowerCase()}`;
   try {
-    let data = incomeCache.get(scale);
+    let data = incomeCache.get(cacheKey);
     if (!data) {
-      const response = await fetch(`assets/income/${definition.file}?v=income-scales-v4`, {
-        cache: "no-cache", signal: incomeController.signal,
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      data = IncomeModel.normalizeAreas(await response.json(), scale);
-      incomeCache.set(scale, data);
+      const fetchData = async (file) => {
+        const response = await fetch(`assets/income/${file}?v=data-od-v1`, {
+          cache: "no-cache", signal: incomeController.signal,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      };
+      if (od) {
+        data = OriginDestinationModel.normalize(await fetchData("origin-destination.json"));
+      } else if (transport) {
+        const [payload, geography] = await Promise.all([
+          fetchData("transport-tracts.json"),
+          incomeCache.has("tract") ? incomeCache.get("tract") : fetchData(definition.file),
+        ]);
+        data = TransportModel.normalize(payload, IncomeModel.normalizeAreas(geography, "tract"));
+      } else {
+        data = IncomeModel.normalizeAreas(await fetchData(definition.file), scale);
+      }
+      if (request !== incomeRequest) return;
+      incomeCache.set(cacheKey, data);
     }
     if (request !== incomeRequest) return;
     const reference = scale === "neighborhood"
@@ -184,12 +217,18 @@ async function loadIncome() {
       onEachFeature(feature, layer) {
         const p = feature.properties;
         const label = p.scale ? p.name : `${p.borough} ${p.name}`;
-        layer.bindTooltip(`${label}${p.total === 0 ? " — No estimated households" : ""}`);
+        if (od) {
+          layer.bindTooltip(`${label} - ${p.nta_name}: ${incomeNumber(p.total)} NYC primary-job links`);
+          layer.on("click", () => { selectOriginDestination(p.geoid); });
+          incomeAreaLayers.set(p.geoid, layer);
+          return;
+        }
+        layer.bindTooltip(`${label}${p.total === 0 ? ` — No estimated ${transport ? "workers with earnings" : "households"}` : ""}`);
         layer.bindPopup(() => {
           const options = layer.getPopup().options;
-          options.minWidth = options.maxWidth = Math.min(820, Math.max(230, map.getSize().x - 70));
+          options.minWidth = options.maxWidth = Math.min(transport ? 1120 : 820, Math.max(230, map.getSize().x - 70));
           options.maxHeight = Math.max(180, Math.min(620, map.getSize().y - 90));
-          return incomePopup(feature, reference);
+          return transport ? transportPopup(feature) : incomePopup(feature, reference);
         }, {
           className: "income-popup",
         });
@@ -209,26 +248,56 @@ async function loadIncome() {
       incomeSelector.append(incomeNode("option", label, null, { value: p.geoid }));
     }
     incomeData = data;
+    if (od) {
+      const { min_link_width_px: minimum, max_link_width_px: maximum } = data.metadata.display;
+      document.getElementById("od-width-legend").textContent =
+        `Fixed linear scale across origins: ${minimum} px minimum + count / ${incomeNumber(data.metadata.max_pair_jobs)} x ${(maximum - minimum).toFixed(1)} px.`;
+    }
     incomeSelector.disabled = false;
     if (document.body.dataset.mode === "income") {
       incomeGroup.addTo(map);
       fitIncomeMap();
     }
-    state.textContent = `${incomeNumber(data.features.length)} NYC ${definition.plural} loaded. Click a polygon or choose an area.`;
+    state.textContent = od
+      ? `${incomeNumber(data.features.length)} origin tracts loaded. Select a tract to show its NYC connections.`
+      : `${incomeNumber(data.features.length)} NYC ${definition.plural} loaded. Click a polygon or choose an area.`;
   } catch (error) {
     if (request !== incomeRequest || error.name === "AbortError") return;
+    if (od) clearOriginDestination();
     map.removeLayer(incomeGroup);
     incomeGroup.clearLayers();
     incomeAreaLayers.clear();
     incomeData = null;
     incomeHomeBounds = null;
     incomeSelector.replaceChildren();
-    state.textContent = `Income unavailable: ${error.message}. No ${definition.plural} displayed.`;
+    state.textContent = `Data unavailable: ${error.message}. No ${definition.plural} displayed.`;
     retry.hidden = false;
-    console.error("Income load failed", error);
+    console.error("Data load failed", error);
   }
 }
 
 incomeScale.addEventListener("change", loadIncome);
-incomeSelector.addEventListener("change", () => { if (incomeSelector.value) openIncomeArea(incomeSelector.value); });
+incomeDataset.addEventListener("change", () => {
+  const transport = incomeDataset.value === "transport";
+  const od = incomeDataset.value === "od";
+  const tractOnly = transport || od;
+  if (tractOnly) {
+    if (!incomeScale.disabled) householdScale = incomeScale.value;
+    incomeScale.value = "tract";
+  } else {
+    incomeScale.value = householdScale;
+  }
+  incomeScale.disabled = tractOnly;
+  document.querySelectorAll("[data-household-copy]").forEach((node) => { node.hidden = tractOnly; });
+  document.getElementById("transport-source-note").hidden = !transport;
+  document.getElementById("od-source-note").hidden = !od;
+  document.getElementById("od-controls").hidden = !od;
+  document.getElementById("nhgis-citation").hidden = od;
+  document.getElementById("data-source-eyebrow").textContent = od ? "DATA / LODES 2023" : "DATA / ACS 2024";
+  loadIncome();
+});
+incomeSelector.addEventListener("change", () => {
+  if (incomeSelector.value) openIncomeArea(incomeSelector.value);
+  else if (incomeData?.metadata.dataset === "lodes_origin_destination") fitIncomeMap();
+});
 document.getElementById("income-retry").addEventListener("click", loadIncome);

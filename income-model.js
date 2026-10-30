@@ -153,7 +153,7 @@
     return payload;
   }
 
-  const api = { normalize, normalizeAreas, chartLayout, areaLayout, labels, countyBoroughs, scales };
+  const api = { normalize, normalizeAreas, chartLayout, areaLayout, labels, countyBoroughs, scales, polygon };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.IncomeModel = api;
 })(globalThis);

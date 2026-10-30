@@ -297,9 +297,11 @@ function setStudyMode(mode) {
   document.querySelectorAll(".income-only").forEach((element) => { element.hidden = !isIncome; });
   document.querySelectorAll(".map-only").forEach((element) => { element.hidden = isMarket || isHousing; });
   document.querySelector(".map-shell").setAttribute("aria-label", isIncome
-    ? "Interactive household income map of NYC at the selected area scale" : "Interactive map of Roosevelt Island");
+    ? `Interactive ${incomeDataset.value === "od" ? "origin-destination" : incomeDataset.value === "transport" ? "transportation" : "household income"} map of NYC ${IncomeModel.scales[incomeScale.value].plural}`
+    : "Interactive map of Roosevelt Island");
   document.querySelectorAll(".exploration-only").forEach((element) => { element.hidden = mode !== "exploration"; });
   map.closePopup();
+  if (incomeData?.metadata.dataset === "lodes_origin_destination") clearOriginDestination();
   leaveExplore();
   map.removeLayer(sitingGroup);
   map.removeLayer(connectivityGroup);

@@ -70,15 +70,113 @@ The source GeoPackage is read-only and its hash is checked before/after export.
 The exporter is `01_sites/export_explore_web.py` in the companion POSTGIS folder,
 configured under `datasets.explore_gpkg`. Existing outputs are immutable.
 
-## Income mode
+## Data mode
 
-Select **Income**, choose an area scale, then click a polygon or use the
+Select **Data**, leave the dataset on **Household income**, choose an area scale, then click a polygon or use the
 keyboard-accessible area selector. Scales are **block group**,
 **census tract**, **neighborhood (NTA)** (default), **community district (CDTA approximation)**,
 and **borough**. Home fits all of NYC. Scale changes replace both the selectable
 polygons and popup statistics; snapshots load on demand and are cached in memory.
 Canvas-rendered polygons keep the citywide view lightweight; charts are generated
 only when an area is opened. Failed loads clear the layer and offer Retry.
+
+### Origin-destination (LODES)
+
+Select **origin-destination** in the Data dropdown. This view is locked to
+**census tracts**, with just **30 selectable origins** initially visible:
+
+| Origin area | 2020 NTA / custom area | Tracts |
+|---|---|---:|
+| Long Island City-Hunters Point | QN0201 | 9 |
+| Queensbridge-Ravenswood-Dutch Kills | QN0105 | 12 |
+| Old Astoria-Hallets Point | QN0102 | 6 |
+| Roosevelt Island | Custom MN0801-RI: 238.02, 238.03, 238.04 | 3 |
+
+Select a polygon or use the keyboard-accessible tract dropdown to reveal that
+tract's residents-to-workplace connections. Orange is the residence origin;
+blue nodes are NYC workplace tract centroids. **All positive destination pairs
+are shown**, not just the largest or a thresholded subset. Line widths follow
+one fixed linear scale across selections: `0.6 + jobs / 185 * 15.4` CSS pixels.
+This keeps small flows visible; widths are count-dependent, not a literal
+ratio without a minimum. Tooltips and an expandable destination table give exact
+counts and shares. Within-tract links are retained as loops. Lines are schematic
+connections, not routes. Nodes use geometric centroids computed in EPSG:2263,
+which can lie outside irregular or multipart tract polygons.
+
+The [OD snapshot](assets/income/origin-destination.json) is about **680 KiB**,
+loads only when this dataset is selected, and contains only origin polygons
+plus compact NYC nodes and counts. It uses **2023 LODES8 release 8.4 JT01 primary
+jobs**, the latest NY JT01 OD year listed by Census when checked on 2026-10-29:
+
+- **42,310** NYC-destination job links across **11,626** tract pairs.
+- **48,212** resident primary jobs in total, independently counted from RAC.
+- **5,902** links to workplaces outside NYC, explicitly counted but not drawn.
+- **524** same-tract links, retained in the displayed total.
+
+These are LODES residence/workplace **primary-job links**, not observations of
+daily trips, travel mode or commuting frequency. The NYC-only restriction is
+user-selected. Origins are all resident blocks assigned to the selected tracts
+by the official LODES block-to-tract crosswalk, including Census boundary
+corrections, not workplace totals or inferred reverse flows.
+Native **2020 TIGER tract geometry** is used rather than the ACS income layer's
+2024 geometry. Roosevelt Island is the existing custom three-tract split, not
+an official standalone NTA.
+
+Selecting an origin replaces the diagram without changing map zoom or position,
+whether selected through the dropdown or by clicking its polygon. **Home**, **Clear selection**,
+or the blank dropdown choice removes nodes/connections and fits the 30 origins.
+Leaving Data or changing datasets also clears selection. Returning starts with
+origins only. The previous household-income scale survives transitions through
+either tract-only dataset. A shared Canvas renderer bounds repeated-selection
+resource use; only the selected origin's links are drawn.
+
+The companion `01_sites/export_origin_destination.py` first profiles source
+columns, keys, nulls, hashes, counts and geometry; `--export` requires approved
+`datasets.lodes_origin_destination` configuration. Official decompressed
+checksums are verified for OD, RAC and the existing LODES crosswalk. Analytical
+Parquet outputs retain exact pair counts and EPSG:2263 tracts. Sources remain
+untouched; output paths are immutable. No citywide spatial overlay or database
+change is needed: all aggregation uses the official tabular crosswalk.
+
+### Transportation by earnings and commute modes
+
+The dataset dropdown also offers **Transportation by earnings + commute modes**,
+restricted to **census tracts**. Switching back restores the previous household
+scale. Click any tract to see two charts side by side (vertically on narrow
+screens):
+
+- **B08119**: worker counts stacked by six published transportation modes over
+  eight individual-earnings bands, from `$1 to $9,999 or loss` to `$75,000 or more`.
+  This is **individual earnings**, not household income. Public transportation
+  is one combined series; taxi, motorcycle, bicycle and other means are another.
+  Points use closed-band midpoints and open-tail endpoints, with unequal dollar
+  spacing. Connecting grouped counts is a display convention, not a density or
+  inferred within-band earnings.
+- **B08301 pie**: car/truck/van/taxi, bus, subway, rail (commuter and light rail),
+  ferry, motorcycle, bicycle, walked, other and worked from home. Shares use the
+  B08301 total. All source counts and MOEs remain in the expandable tables;
+  zero-total shares are explicitly unavailable.
+
+The [transport snapshot](assets/income/transport-tracts.json) holds all **2,327
+NYC tracts**, with **3,926,603 workers with earnings** in B08119 and **3,926,797
+workers age 16+** in B08301. These universes differ; the totals are not forced to
+match. B08119 uses the supplied **2020-2024 ACS native tract estimates and original
+90% MOEs**. B08301 sums the existing NHGIS block groups inside each tract, with
+approximate 90% MOEs computed from all contributing source cells by
+root-sum-of-squares, rounded up once. Percentages are descriptive; no percentage
+MOEs are fabricated.
+
+The companion `01_sites/export_transport_tracts.py` validates every mode/band
+sum, exact key membership, geometry validity and source fingerprints; its
+parameters are in `datasets.transport_tracts`. Geometry is reused from the
+existing tract snapshot, not duplicated. Source files remain untouched.
+Transportation assets are fetched only on selection and cached separately from
+income; stale responses cannot replace a newer selection. No Roosevelt Island
+comparison is added. Grey marks the **90 tracts with zero estimated workers with
+earnings**, not missing data; they remain clickable. Home fits all NYC.
+The internal mode key remains `income` for compatibility; its visible name is Data.
+
+### Household-income geography and methodology
 
 The supplied `nyc2020census_tract_nta_cdta_relationships.xlsx` maps every source
 block group via its 11-digit tract GEOID: **2,327 tracts**, **263 neighborhood areas**, **71 CDTAs**
