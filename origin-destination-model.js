@@ -6,12 +6,14 @@
   const tractKey = (value) => typeof value === "string" && /^36(005|047|061|081|085)\d{6}$/.test(value);
   const ntaKey = (value) => typeof value === "string" && /^(?:(BX|BK|MN|QN|SI)\d{4}|MN0801-RI)$/.test(value);
 
-  function normalize(payload, scale = "tract") {
+  function normalize(payload, scale = "tract", direction = "od") {
     const m = payload?.metadata;
+    const reverse = direction === "do";
     const nta = scale === "neighborhood";
     const key = nta ? ntaKey : tractKey;
     if (payload?.type !== "FeatureCollection" || payload.schema_version !== 1 ||
-        !["tract", "neighborhood"].includes(scale) ||
+        !["tract", "neighborhood"].includes(scale) || !["od", "do"].includes(direction) ||
+        (reverse ? m?.direction !== "destination_origin" || m.residence_scope !== "NYC" : m?.direction !== undefined) ||
         (nta ? m?.scale !== "neighborhood" : (m?.scale !== undefined && m.scale !== "tract")) ||
         m?.dataset !== "lodes_origin_destination" || m.year !== 2023 || m.job_type !== "JT01" ||
         m.measure !== "primary_job_links" || m.destination_scope !== "NYC" ||
@@ -22,7 +24,7 @@
         !m.origin_geoids.every(key) || new Set(m.origin_geoids).size !== m.feature_count ||
         !m.origin_areas || !Object.values(m.origin_areas).every((name) => typeof name === "string" && name) ||
         !payload.nodes || Array.isArray(payload.nodes) ||
-        ![m.nyc_jobs, m.resident_primary_jobs, m.outside_nyc_jobs, m.max_pair_jobs].every(count) ||
+        !(reverse ? [m.nyc_jobs, m.max_pair_jobs] : [m.nyc_jobs, m.resident_primary_jobs, m.outside_nyc_jobs, m.max_pair_jobs]).every(count) ||
         m.max_pair_jobs === 0 || m.display?.size_scale !== "square_root" ||
         !Number.isFinite(m.display?.min_node_radius_px) || m.display.min_node_radius_px <= 0 ||
         !Number.isFinite(m.display?.max_node_radius_px) ||
@@ -72,8 +74,8 @@
           typeof p.name !== "string" || !p.name ||
           p.borough !== (nta ? payload.nodes[p.geoid].borough : income.countyBoroughs[p.geoid.slice(2, 5)]) ||
           !Object.hasOwn(m.origin_areas, p.nta) || p.nta_name !== m.origin_areas[p.nta] ||
-          ![p.total, p.resident_primary_jobs, p.outside_nyc_jobs].every(count) ||
-          p.total + p.outside_nyc_jobs !== p.resident_primary_jobs || !Array.isArray(p.flows)) {
+          !(reverse ? [p.total] : [p.total, p.resident_primary_jobs, p.outside_nyc_jobs]).every(count) ||
+          (!reverse && p.total + p.outside_nyc_jobs !== p.resident_primary_jobs) || !Array.isArray(p.flows)) {
         throw new Error(`Invalid LODES origin tract: ${p?.geoid ?? "missing GEOID"}.`);
       }
       if (nta && (p.geoid !== p.nta || !Array.isArray(p.members) ||
@@ -98,10 +100,12 @@
       }
       if (total !== p.total) throw new Error(`LODES counts do not reconcile: ${p.geoid}.`);
       jobs += total;
-      residents += p.resident_primary_jobs;
-      excluded += p.outside_nyc_jobs;
+      if (!reverse) {
+        residents += p.resident_primary_jobs;
+        excluded += p.outside_nyc_jobs;
+      }
     }
-    if (jobs !== m.nyc_jobs || residents !== m.resident_primary_jobs || excluded !== m.outside_nyc_jobs ||
+    if (jobs !== m.nyc_jobs || (!reverse && (residents !== m.resident_primary_jobs || excluded !== m.outside_nyc_jobs)) ||
         maximum !== m.max_pair_jobs || areas.size !== Object.keys(m.origin_areas).length ||
         (nta && sameArea !== m.same_area_jobs)) {
       throw new Error("LODES snapshot totals or origin areas do not reconcile.");
@@ -134,6 +138,21 @@
     return flows.filter((flow) => flow.jobs >= minimum);
   }
 
+  function thresholdPosition(minimum, maximum) {
+    if (!count(maximum) || maximum < 1 || !count(minimum) || minimum < 1 || minimum > maximum) {
+      throw new Error("Invalid LODES threshold range.");
+    }
+    return maximum === 1 ? 0 : Math.log(minimum) / Math.log(maximum) * 1000;
+  }
+
+  function thresholdFromPosition(position, maximum) {
+    thresholdPosition(1, maximum);
+    if (!Number.isFinite(position) || position < 0 || position > 1000) {
+      throw new Error("Invalid LODES threshold slider position.");
+    }
+    return Math.round(Math.exp(position / 1000 * Math.log(maximum)));
+  }
+
   function linkWidth(jobs, metadata) {
     if (!count(jobs) || jobs <= 0 || !count(metadata.max_pair_jobs) || jobs > metadata.max_pair_jobs ||
         !Number.isFinite(metadata.display?.min_link_width_px) || metadata.display.min_link_width_px <= 0 ||
@@ -145,6 +164,12 @@
     return minimum + Math.sqrt(jobs / metadata.max_pair_jobs) * (maximum - minimum);
   }
 
+  function linkOpacity(jobs, metadata, keyConnection = false) {
+    linkWidth(jobs, metadata);
+    const fraction = Math.sqrt(jobs / metadata.max_pair_jobs);
+    return keyConnection ? 0.2 + 0.75 * fraction : 0.08 + 0.47 * fraction;
+  }
+
   function nodeRadius(jobs, metadata) {
     linkWidth(jobs, metadata);
     const { min_node_radius_px: minimum, max_node_radius_px: maximum } = metadata.display;
@@ -154,7 +179,7 @@
     return minimum + Math.sqrt(jobs / metadata.max_pair_jobs) * (maximum - minimum);
   }
 
-  const api = { normalize, normalizeBoundaries, visibleFlows, linkWidth, nodeRadius };
+  const api = { normalize, normalizeBoundaries, visibleFlows, thresholdPosition, thresholdFromPosition, linkWidth, linkOpacity, nodeRadius };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.OriginDestinationModel = api;
 })(globalThis);

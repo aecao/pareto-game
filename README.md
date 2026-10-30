@@ -108,9 +108,50 @@ with origin-specific counts retained even where destination
 nodes overlap. All origins use the same NTA count-to-size scale. Per-origin
 summaries and full destination tables remain expandable below the color labels.
 This does not add other NYC areas as residence origins.
+
+In both commute directions and at both scales, connections between two
+selectable areas are bright magenta at higher opacity, in a dedicated pane
+above ordinary connections and outlines. All node markers render above these
+highlighted lines. Selectability follows the current dataset and scale, not
+the current single selection. Self-loops qualify too. Threshold filtering,
+exact count-based widths and original counts are unchanged; in all-origin
+view, the highlight overrides the origin-specific line color for these pairs.
+Line opacity also increases with the square root of the pair count divided by
+the fixed per-scale maximum: ordinary opacity is `0.08 + 0.47 * sqrt(ratio)`,
+key-area opacity is `0.20 + 0.75 * sqrt(ratio)`. Key links are brighter than
+ordinary links at equal counts. These are cartographic display assumptions,
+not changes to job counts. All lines and loops are noninteractive and have no
+line tooltips, allowing clicks through to selectable polygons; node tooltips
+and complete count tables remain available.
+
+The separate **destination-origin** dataset reverses the selection: choose a
+workplace NTA (or one of its native 2020 tracts) to show its NYC residence
+origins. Selectable areas are Financial District-Battery Park City,
+Chelsea-Hudson Yards, Midtown South-Flatiron-Union Square, Midtown-Times Square,
+Murray Hill-Kips Bay, East Midtown-Turtle Bay and the four original study areas.
+This explicit list replaces a numerical eligibility threshold; Murray Hill in
+Queens is not included. There are 10 workplace NTAs / 91 workplace tracts,
+946,971 NYC-resident primary-job links, 2,411 NTA pairs and 125,023 tract pairs.
+Both ends preserve the Roosevelt Island split. Orange nodes are selected
+workplaces, blue nodes are residence origins, and purple outlines are linked
+residence areas. Within-area connections are small loops. All NYC residences
+are eligible, not just the study areas. Non-NYC residences are excluded; these
+are **not total incoming employment** or observed daily trips.
+
+Incoming views retain the threshold slider, fixed per-scale sizing, complete
+count tables, explicit errors/Retry and camera invariance on selection/filtering.
+Incoming and outgoing datasets have separate scale memories and caches. The
+all-four-study-origins checkbox applies only to outgoing NTA view. Incoming
+assets are lazy-loaded and validated for direction, NYC residence scope,
+geography and exact totals.
 The **Minimum job links per pair** slider filters pairs inclusively by their
 primary-job-link count, from 1 to the fixed maximum pair count at the current
-scale. It updates connections, loops, destination nodes and destination
+scale. Its logarithmic scale gives more room to small thresholds; the adjacent
+numeric input accepts any exact integer in range on Enter or blur. Both
+controls stay synchronized, and the slider's accessible value text reports
+actual job links rather than its internal position. Invalid numeric entries
+show an error and retain the last applied diagram until corrected.
+It updates connections, loops, destination nodes and destination
 outlines together without moving the map; origin nodes stay visible even when
 no pair qualifies. All-origin filtering applies to each pair separately, not
 combined destination totals. Summaries report shown/hidden pairs and job links;

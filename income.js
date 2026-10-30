@@ -13,6 +13,7 @@ const incomeDataset = document.getElementById("income-dataset");
 let householdScale = incomeScale.value;
 let incomePreviousDataset = incomeDataset.value;
 let originDestinationScale = "tract";
+let destinationOriginScale = "neighborhood";
 let originDestinationMinimum = 1;
 const incomeNumber = (value) => value.toLocaleString("en-US");
 
@@ -140,7 +141,7 @@ function fitIncomeMap() {
   if (od) {
     clearOriginDestination();
     const nta = incomeData.metadata.scale === "neighborhood";
-    document.getElementById("income-state").textContent = `${incomeNumber(incomeData.features.length)} origin ${nta ? "NTA areas" : "tracts"} loaded. Select ${nta ? "an NTA" : "a tract"} to show its NYC connections.`;
+    document.getElementById("income-state").textContent = `${incomeNumber(incomeData.features.length)} ${incomeData.metadata.direction ? "workplace" : "origin"} ${nta ? "NTA areas" : "tracts"} loaded. Select ${nta ? "an NTA" : "a tract"} to show its NYC connections.`;
   }
   map.closePopup();
   map.setMinZoom(9);
@@ -167,12 +168,13 @@ async function loadIncome() {
   incomeController = new AbortController();
   const scale = incomeScale.value;
   const transport = incomeDataset.value === "transport";
-  const od = incomeDataset.value === "od";
+  const reverse = incomeDataset.value === "do";
+  const od = incomeDataset.value === "od" || reverse;
   if ((transport && scale !== "tract") || (od && !["tract", "neighborhood"].includes(scale))) {
     throw new Error("Unsupported geography for this dataset.");
   }
-  const cacheKey = od ? `od:${scale}` : transport ? "transport:tract" : scale;
-  const datasetLabel = od ? "origin-destination" : transport ? "transportation" : "household income";
+  const cacheKey = od ? `${incomeDataset.value}:${scale}` : transport ? "transport:tract" : scale;
+  const datasetLabel = reverse ? "destination-origin" : od ? "origin-destination" : transport ? "transportation" : "household income";
   const definition = IncomeModel.scales[scale];
   const state = document.getElementById("income-state");
   const retry = document.getElementById("income-retry");
@@ -182,11 +184,17 @@ async function loadIncome() {
   retry.hidden = true;
   incomeSelector.disabled = true;
   document.getElementById("od-threshold").disabled = true;
-  document.getElementById("od-threshold").value = "1";
+  document.getElementById("od-threshold").value = "0";
+  document.getElementById("od-threshold-number").disabled = true;
+  document.getElementById("od-threshold-number").value = "1";
+  document.getElementById("od-threshold-number").setAttribute("aria-invalid", "false");
+  document.getElementById("od-threshold-error").textContent = "";
   document.getElementById("od-threshold-value").textContent = "1";
   originDestinationMinimum = 1;
   document.getElementById("od-show-all").disabled = true;
-  document.getElementById("od-show-all-control").hidden = !(od && scale === "neighborhood");
+  document.getElementById("od-show-all-control").hidden = !(od && !reverse && scale === "neighborhood");
+  document.getElementById("od-direction-help").hidden = !reverse;
+  document.getElementById("od-forward-legend").hidden = reverse;
   map.closePopup();
   if (incomeData?.metadata.dataset === "lodes_origin_destination") clearOriginDestination();
   incomeGroup.clearLayers();
@@ -207,10 +215,10 @@ async function loadIncome() {
       };
       if (od) {
         const [payload, boundaries] = await Promise.all([
-          fetchData(scale === "neighborhood" ? "origin-destination-nta.json" : "origin-destination.json"),
+          fetchData(`${reverse ? "destination-origin" : "origin-destination"}${scale === "neighborhood" ? "-nta" : ""}.json`),
           fetchData(`od-boundaries-${scale}.json`),
         ]);
-        data = OriginDestinationModel.normalize(payload, scale);
+        data = OriginDestinationModel.normalize(payload, scale, reverse ? "do" : "od");
         data = { ...data, boundaries: OriginDestinationModel.normalizeBoundaries(boundaries, data, scale) };
       } else if (transport) {
         const [payload, geography] = await Promise.all([
@@ -266,20 +274,23 @@ async function loadIncome() {
     }
     incomeData = data;
     if (od) {
-      document.getElementById("od-threshold").max = String(data.metadata.max_pair_jobs);
+      document.getElementById("od-threshold").max = "1000";
       document.getElementById("od-threshold").disabled = false;
+      document.getElementById("od-threshold-number").max = String(data.metadata.max_pair_jobs);
+      document.getElementById("od-threshold-number").disabled = false;
+      document.getElementById("od-threshold").setAttribute("aria-valuetext", "1 primary-job link per pair");
       const { min_link_width_px: minimum, max_link_width_px: maximum } = data.metadata.display;
       document.getElementById("od-width-legend").textContent =
-        `Fixed square-root scale across origins at this geography (${incomeNumber(data.metadata.max_pair_jobs)} links at maximum size): ${minimum}-${maximum} px lines and ${data.metadata.display.min_node_radius_px}-${data.metadata.display.max_node_radius_px} px destination radii. Larger counts give thicker lines and larger nodes; exact counts are in tooltips and the table.`;
+        `Fixed square-root scale across selected ${reverse ? "workplaces" : "origins"} at this geography (${incomeNumber(data.metadata.max_pair_jobs)} links at maximum size): ${minimum}-${maximum} px lines and ${data.metadata.display.min_node_radius_px}-${data.metadata.display.max_node_radius_px} px linked-node radii. Larger counts give thicker lines and larger nodes; exact counts are in tooltips and the table.`;
     }
     incomeSelector.disabled = false;
-    document.getElementById("od-show-all").disabled = !(od && scale === "neighborhood");
+    document.getElementById("od-show-all").disabled = !(od && !reverse && scale === "neighborhood");
     if (document.body.dataset.mode === "income") {
       incomeGroup.addTo(map);
       fitIncomeMap();
     }
     state.textContent = od
-      ? `${incomeNumber(data.features.length)} origin ${scale === "neighborhood" ? "NTA areas" : "tracts"} loaded. Select an area to show its NYC connections.`
+      ? `${incomeNumber(data.features.length)} ${reverse ? "workplace" : "origin"} ${scale === "neighborhood" ? "NTA areas" : "tracts"} loaded. Select an area to show its NYC connections.`
       : `${incomeNumber(data.features.length)} NYC ${definition.plural} loaded. Click a polygon or choose an area.`;
   } catch (error) {
     if (request !== incomeRequest || error.name === "AbortError") return;
@@ -299,11 +310,13 @@ async function loadIncome() {
 incomeScale.addEventListener("change", loadIncome);
 incomeDataset.addEventListener("change", () => {
   const transport = incomeDataset.value === "transport";
-  const od = incomeDataset.value === "od";
+  const reverse = incomeDataset.value === "do";
+  const od = incomeDataset.value === "od" || reverse;
   const nonHousehold = transport || od;
   if (incomePreviousDataset === "household") householdScale = incomeScale.value;
   if (incomePreviousDataset === "od") originDestinationScale = incomeScale.value;
-  incomeScale.value = od ? originDestinationScale : transport ? "tract" : householdScale;
+  if (incomePreviousDataset === "do") destinationOriginScale = incomeScale.value;
+  incomeScale.value = reverse ? destinationOriginScale : od ? originDestinationScale : transport ? "tract" : householdScale;
   incomeScale.disabled = transport;
   for (const option of incomeScale.options ?? []) {
     option.disabled = od ? !["tract", "neighborhood"].includes(option.value) : transport && option.value !== "tract";
@@ -311,7 +324,7 @@ incomeDataset.addEventListener("change", () => {
   incomePreviousDataset = incomeDataset.value;
   document.querySelectorAll("[data-household-copy]").forEach((node) => { node.hidden = nonHousehold; });
   document.getElementById("transport-source-note").hidden = !transport;
-  document.getElementById("od-source-note").hidden = !od;
+  document.getElementById("od-source-note").hidden = !od || reverse;
   document.getElementById("od-controls").hidden = !od;
   document.getElementById("nhgis-citation").hidden = od;
   document.getElementById("data-source-eyebrow").textContent = od ? "DATA / LODES 2023" : "DATA / ACS 2024";

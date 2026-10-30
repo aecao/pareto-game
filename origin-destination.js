@@ -2,6 +2,10 @@
 
 const originDestinationGroup = L.featureGroup();
 const originDestinationRenderer = L.canvas({ padding: 0.3 });
+map.createPane("od-key-connections").style.zIndex = "410";
+map.createPane("od-nodes").style.zIndex = "420";
+const originDestinationKeyRenderer = L.canvas({ padding: 0.3, pane: "od-key-connections" });
+const originDestinationNodeRenderer = L.canvas({ padding: 0.3, pane: "od-nodes" });
 let originDestinationSelected = null;
 
 function visibleOriginDestinationFlows(p) {
@@ -61,16 +65,17 @@ function drawDestinationBoundaries(origins) {
 }
 
 function drawOriginDestination(p, color = "#375a9e") {
+  const reverse = incomeData.metadata.direction === "destination_origin";
   const geoid = p.geoid;
   const nodes = incomeData.nodes;
   const metadata = incomeData.metadata;
-  const area = p.scale === "neighborhood" ? "NTA area" : "tract";
   const origin = L.latLng(nodes[geoid].center[1], nodes[geoid].center[0]);
   const renderer = originDestinationRenderer;
   const selected = incomeAreaLayers.get(geoid);
   selected.setStyle({ color: "#b94c00", weight: 2.5, fillColor: "#ffb36b", fillOpacity: 0.6 });
   const flows = visibleOriginDestinationFlows(p).sort((a, b) => a.jobs - b.jobs || a.destination.localeCompare(b.destination));
   for (const flow of flows) {
+    const keyConnection = incomeAreaLayers.has(flow.destination);
     const destination = L.latLng(nodes[flow.destination].center[1], nodes[flow.destination].center[0]);
     let points = [origin, destination];
     if (flow.destination === geoid) {
@@ -80,28 +85,32 @@ function drawOriginDestination(p, color = "#375a9e") {
         return map.unproject(L.point(center.x + 24 + Math.cos(angle) * 24, center.y + Math.sin(angle) * 24), 14);
       });
     }
-    const label = `${p.name} to ${nodes[flow.destination].name}: ${incomeNumber(flow.jobs)} primary-job links${flow.destination === geoid ? ` (within the same ${area})` : ""}`;
     L.polyline(points, {
-      renderer, color, opacity: 0.55, weight: OriginDestinationModel.linkWidth(flow.jobs, metadata),
-      bubblingMouseEvents: false,
-    }).bindTooltip(incomeNode("span", label, null), { sticky: true }).addTo(originDestinationGroup);
+      renderer: keyConnection ? originDestinationKeyRenderer : renderer,
+      color: keyConnection ? "#e000ff" : color,
+      opacity: OriginDestinationModel.linkOpacity(flow.jobs, metadata, keyConnection),
+      weight: OriginDestinationModel.linkWidth(flow.jobs, metadata),
+      interactive: false, bubblingMouseEvents: false,
+    }).addTo(originDestinationGroup);
   }
   for (const flow of flows) {
     if (flow.destination === geoid) continue;
     const node = nodes[flow.destination];
     L.circleMarker([node.center[1], node.center[0]], {
-      renderer, radius: OriginDestinationModel.nodeRadius(flow.jobs, metadata),
+      renderer: originDestinationNodeRenderer, radius: OriginDestinationModel.nodeRadius(flow.jobs, metadata),
       color: "#fff", weight: 0.5, fillColor: "#375a9e", fillOpacity: 0.9,
       bubblingMouseEvents: false,
-    }).bindTooltip(incomeNode("span", `${node.name}: ${incomeNumber(flow.jobs)} primary-job links from ${p.name}`, null))
+    }).bindTooltip(incomeNode("span", `${node.name}: ${incomeNumber(flow.jobs)} primary-job links ${reverse ? "to" : "from"} ${p.name}`, null))
       .addTo(originDestinationGroup);
   }
   L.circleMarker(origin, {
+    renderer: originDestinationNodeRenderer,
     radius: 8, color: "#fff", weight: 2, fillColor: "#c75200", fillOpacity: 1, bubblingMouseEvents: false,
-  }).bindTooltip(incomeNode("span", `Origin: ${p.name}`, null)).addTo(originDestinationGroup);
+  }).bindTooltip(incomeNode("span", `${reverse ? "Workplace destination" : "Origin"}: ${p.name}`, null)).addTo(originDestinationGroup);
 }
 
 function appendOriginDestinationSummary(p, summary) {
+  const reverse = incomeData.metadata.direction === "destination_origin";
   const { nodes } = incomeData;
   const geoid = p.geoid;
   const area = p.scale === "neighborhood" ? "NTA area" : "tract";
@@ -109,19 +118,21 @@ function appendOriginDestinationSummary(p, summary) {
   const flows = [...p.flows].sort((a, b) => a.jobs - b.jobs || a.destination.localeCompare(b.destination));
   incomeNode("h2", p.name, summary);
   if (p.scale === "tract") incomeNode("p", p.nta_name, summary);
-  incomeNode("p", `${incomeNumber(p.total)} primary-job links to ${incomeNumber(p.flows.length)} NYC workplace ${plural}. Orange node: selected residence ${area}. Blue nodes: workplace ${plural}.`, summary);
+  incomeNode("p", reverse
+    ? `${incomeNumber(p.total)} incoming primary-job links from ${incomeNumber(p.flows.length)} NYC residence ${plural}. Orange node: selected workplace ${area}. Blue nodes: residence ${plural}.`
+    : `${incomeNumber(p.total)} primary-job links to ${incomeNumber(p.flows.length)} NYC workplace ${plural}. Orange node: selected residence ${area}. Blue nodes: workplace ${plural}.`, summary);
   incomeNode("p", originDestinationThresholdSummary([p]), summary);
   if (p.scale === "neighborhood") {
     incomeNode("p", `Sum of ${incomeNumber(p.members.length)} whole native-2020 tracts. Roosevelt Island is separated from Upper East Side-Lenox Hill at both ends; these two areas are custom, not official NTAs.`, summary);
   }
   const same = p.flows.find((flow) => flow.destination === geoid)?.jobs ?? 0;
-  incomeNode("p", `${incomeNumber(same)} links stay within this ${area} (loop shown only when its count meets the threshold). ${incomeNumber(p.outside_nyc_jobs)} outside-NYC links are excluded from the diagram; ${incomeNumber(p.resident_primary_jobs)} resident primary jobs in total.`, summary);
+  incomeNode("p", `${incomeNumber(same)} links stay within this ${area} (loop shown only when its count meets the threshold). ${reverse ? "Only NYC residences are included; not total incoming employment. Non-NYC residences are outside this view." : `${incomeNumber(p.outside_nyc_jobs)} outside-NYC links are excluded from the diagram; ${incomeNumber(p.resident_primary_jobs)} resident primary jobs in total.`}`, summary);
   const details = incomeNode("details", null, summary, { class: "od-destinations" });
-  incomeNode("summary", "All destination counts (largest first)", details);
+  incomeNode("summary", `All ${reverse ? "residence-origin" : "destination"} counts (largest first)`, details);
   const table = incomeNode("table", null, details, { class: "income-popup-table" });
-  incomeNode("caption", "2023 LODES JT01 primary-job links; all destinations, including pairs hidden by the threshold; share of all NYC links for this origin", table);
+  incomeNode("caption", `2023 LODES JT01 primary-job links; all ${reverse ? "residence origins" : "destinations"}, including pairs hidden by the threshold; share of all NYC links for this ${reverse ? "workplace" : "origin"}`, table);
   const head = incomeNode("tr", null, incomeNode("thead", null, table));
-  [`Workplace ${area}`, "Links", "Share"].forEach((label) => incomeNode("th", label, head, { scope: "col" }));
+  [`${reverse ? "Residence" : "Workplace"} ${area}`, "Links", "Share"].forEach((label) => incomeNode("th", label, head, { scope: "col" }));
   const body = incomeNode("tbody", null, table);
   for (const flow of [...flows].reverse()) {
     const row = incomeNode("tr", null, body);
@@ -132,7 +143,7 @@ function appendOriginDestinationSummary(p, summary) {
 }
 
 function showAllOriginDestinations() {
-  if (incomeData?.metadata.dataset !== "lodes_origin_destination" || incomeData.metadata.scale !== "neighborhood") {
+  if (incomeData?.metadata.dataset !== "lodes_origin_destination" || incomeData.metadata.scale !== "neighborhood" || incomeData.metadata.direction) {
     throw new Error("Showing all origins requires NTA origin-destination data.");
   }
   clearOriginDestination();
@@ -158,15 +169,36 @@ function showAllOriginDestinations() {
 }
 
 document.getElementById("od-clear").addEventListener("click", fitIncomeMap);
-document.getElementById("od-threshold").addEventListener("input", (event) => {
-  const minimum = Number(event.target.value);
+function updateOriginDestinationThreshold(minimum) {
   if (!Number.isSafeInteger(minimum) || minimum < 1 || minimum > incomeData?.metadata.max_pair_jobs) {
     throw new Error("Invalid LODES minimum job-link threshold.");
   }
   originDestinationMinimum = minimum;
+  document.getElementById("od-threshold").value =
+    String(OriginDestinationModel.thresholdPosition(minimum, incomeData.metadata.max_pair_jobs));
+  document.getElementById("od-threshold").setAttribute("aria-valuetext", `${incomeNumber(minimum)} primary-job links per pair`);
+  document.getElementById("od-threshold-number").value = String(minimum);
+  document.getElementById("od-threshold-number").setAttribute("aria-invalid", "false");
+  document.getElementById("od-threshold-error").textContent = "";
   document.getElementById("od-threshold-value").textContent = incomeNumber(minimum);
   if (document.getElementById("od-show-all").checked) showAllOriginDestinations();
   else if (originDestinationSelected) selectOriginDestination(originDestinationSelected);
+}
+
+document.getElementById("od-threshold").addEventListener("input", (event) => {
+  updateOriginDestinationThreshold(OriginDestinationModel.thresholdFromPosition(
+    Number(event.target.value), incomeData.metadata.max_pair_jobs));
+});
+document.getElementById("od-threshold-number").addEventListener("change", (event) => {
+  const minimum = Number(event.target.value);
+  const maximum = incomeData.metadata.max_pair_jobs;
+  if (!Number.isSafeInteger(minimum) || minimum < 1 || minimum > maximum) {
+    event.target.setAttribute("aria-invalid", "true");
+    document.getElementById("od-threshold-error").textContent =
+      `Enter a whole number from 1 to ${incomeNumber(maximum)}. The diagram still uses ${incomeNumber(originDestinationMinimum)}.`;
+    return;
+  }
+  updateOriginDestinationThreshold(minimum);
 });
 document.getElementById("od-show-all").addEventListener("change", (event) => {
   if (event.target.checked) showAllOriginDestinations();

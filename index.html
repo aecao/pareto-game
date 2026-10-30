@@ -212,6 +212,7 @@
             <option value="household">Household income</option>
             <option value="transport">Transportation by earnings + commute modes</option>
             <option value="od">origin-destination</option>
+            <option value="do">destination-origin</option>
           </select>
           <p class="section-note" data-household-copy>Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
           <p id="transport-source-note" class="section-note" hidden>Tracts only. B08119 stacks six commute modes by individual earnings (2024 dollars), with original tract 90% MOEs. Beside it, a B08301 pie shows ten commute categories, summed from whole block groups with approximate root-sum-of-squares MOEs. Both use 2020–2024 ACS estimates; their worker universes differ. No Roosevelt Island comparison. Grey means zero estimated workers with earnings, not missing data; areas remain clickable. Home fits NYC. <a href="https://data.census.gov/table/ACSDT5Y2024.B08119">B08119</a> · <a href="https://data.census.gov/table/ACSDT5Y2024.B08301">B08301</a>.</p>
@@ -229,12 +230,17 @@
           <p id="income-state" role="status" aria-live="polite">Open Data to load neighborhood data.</p>
           <button id="income-retry" class="secondary-button" type="button" hidden>Retry Data</button>
           <div id="od-controls" hidden>
+            <p id="od-direction-help" class="section-note" hidden>2023 LODES JT01 primary-job links, native 2020 geography. Select a workplace in Financial District-Battery Park City, Chelsea-Hudson Yards, Midtown South-Flatiron-Union Square, Midtown-Times Square, Murray Hill-Kips Bay, East Midtown-Turtle Bay, or the four study areas. All 91 constituent tracts are selectable at tract scale. Connections lead to all NYC residence areas, not just the study areas. Orange: selected workplace destination. Blue: residence origins. Purple outlines: linked residence areas. Self-connections are small loops. Non-NYC residences are excluded; these are not total incoming jobs or observed trips. Roosevelt Island is split at both ends. Selection and filtering do not move the map.</p>
             <label for="od-threshold">Minimum job links per pair: <output id="od-threshold-value" for="od-threshold">1</output></label>
-            <input id="od-threshold" type="range" min="1" max="1" step="1" value="1" disabled aria-describedby="od-threshold-help">
-            <p id="od-threshold-help" class="section-note">Show pairs with at least this many primary-job links. Filters lines, destination nodes and outlines, not origin nodes. Applies separately to each origin; full destination counts remain below. Resets to 1 when data or scale changes.</p>
+            <input id="od-threshold" type="range" min="0" max="1000" step="any" value="0" disabled aria-describedby="od-threshold-help" aria-valuetext="1 primary-job link per pair">
+            <label for="od-threshold-number">Exact minimum job links</label>
+            <input id="od-threshold-number" type="number" min="1" max="1" step="1" value="1" disabled aria-describedby="od-threshold-help od-threshold-error">
+            <p id="od-threshold-error" class="section-note" role="alert"></p>
+            <p id="od-threshold-help" class="section-note">The slider uses a logarithmic scale for finer control at low counts. Type an exact whole-number minimum and press Enter or leave the field to apply. Show pairs with at least this many primary-job links. Filters lines, linked nodes and outlines, not the selected node. Full counts remain below. Resets to 1 when data or scale changes.</p>
             <label id="od-show-all-control" hidden><input id="od-show-all" type="checkbox" disabled> Show all four study-origin NTAs</label>
             <button id="od-clear" class="secondary-button" type="button" disabled>Clear selection</button>
-            <p class="section-note">Orange markers: residence origins. Blue markers: workplace destinations. Purple unfilled outlines: displayed destination areas. In all-origins view, connection colors identify the origin as listed below. Thicker connections and larger destination nodes mean more primary-job links. <span id="od-width-legend"></span> Within-area links are loops when they meet the threshold. All NYC destination counts are retained in the tables; the threshold only filters the diagram. Outside-NYC jobs are counted separately, not drawn. Home or Clear selection hides connections and destination outlines and fits the origin areas.</p>
+            <p id="od-forward-legend" class="section-note">Orange markers: residence origins. Blue markers: workplace destinations. Purple unfilled outlines: displayed destination areas. In all-origins view, connection colors identify the origin as listed below. Outside-NYC jobs are counted separately, not drawn.</p>
+            <p class="section-note">Bright magenta connections link two selectable areas and appear above ordinary connections, with nodes on top. Lower-count connections are more transparent. Lines do not intercept clicks or hover; use node tooltips and tables for counts. Thicker connections and larger linked nodes mean more primary-job links. <span id="od-width-legend"></span> Within-area links are loops when they meet the threshold. All NYC pair counts are retained in the tables; the threshold only filters the diagram. Home or Clear selection hides connections and linked outlines and fits selectable areas.</p>
             <div id="od-selection" aria-live="polite"></div>
           </div>
           <p class="section-note" data-household-copy>Choose a scale, then click a polygon or select an area. Neighborhoods are the default; their charts include an orange Roosevelt Island reference on the same household-count axis. Larger areas sum whole block groups. Home fits all of NYC.</p>
@@ -451,7 +457,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
-    <script src="siting.js"></script>
+    <script src="siting.js?v=data-od-v8"></script>
     <script src="connectivity-model.js?v=three-bridges-v9"></script>
     <script src="connectivity.js?v=three-bridges-v9"></script>
     <script src="market-model.js"></script>
@@ -466,9 +472,9 @@
     <script src="income-model.js?v=data-od-v1"></script>
     <script src="transport-model.js?v=data-transport-v1"></script>
     <script src="transport.js?v=data-transport-v1"></script>
-    <script src="origin-destination-model.js?v=data-od-v7"></script>
-    <script src="income.js?v=data-od-v7"></script>
-    <script src="origin-destination.js?v=data-od-v7"></script>
+    <script src="origin-destination-model.js?v=data-od-v11"></script>
+    <script src="income.js?v=data-od-v9"></script>
+    <script src="origin-destination.js?v=data-od-v11"></script>
     <script src="explore-model.js"></script>
     <script src="explore.js"></script>
   </body>
