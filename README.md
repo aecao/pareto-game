@@ -919,3 +919,32 @@ redraw afterward. Workers, canvases and pending drawing frames are cleaned up
 when leaving the layer, and recreate on return. Dataset and scale caches,
 stale-response protection and explicit errors/Retry preserve existing Data
 behavior. Jobs scale memory is independent from income and commute views.
+
+# Housing by mode Data view
+
+The **housing by mode** dataset shows the individual MapPLUTO 26v2 lots from the Siting pilot area
+(Queens CD1-2; Roosevelt Island, Manhattan block 1373, is excluded for now). They are not merged into Siting assemblages. Only lots with
+PLUTO LandUse 01-04 and at least one residential unit are shown: 24,919 lots and 167,508 units.
+Darker fills mean more residential units (`UnitsRes`: 1 | 2 | 3-9 | 10-49 | 50+). These are units,
+not residents.
+
+Hue is a modeled estimate of tenure, not lot-level tenure. Each lot receives the 2020-2024 ACS
+B25032 owner/renter split for structures of its size. Size is units per building
+(`UnitsRes / NumBldgs`), taken within its block group. If that cell has no occupied units,
+the tract cell is used, then the pilot cell. The legend groups are:
+
+- Renter-majority (orange): under 40% owner-occupied.
+- Mixed (grey): 40-60%.
+- Owner-majority (blue): over 60%.
+
+Condo billing lots carry all condo units and use the same size-based estimate. Popups show units,
+building class, the ACS cell counts and the fallback level.
+
+`assets/housing_mode/lots.json` is about 2.95 MB. It is a compact schema-versioned payload:
+
+- Lot attributes are stored as rows.
+- Shared ACS cells are stored in a separate table.
+- Geometry uses delta-encoded integer micro-degree rings, decoded by `housing-mode-model.js`.
+
+The scale control is hidden and the area selector is disabled; click lots on the map.
+Regenerate with `POSTGIS/01_sites/export_housing_mode.py`.

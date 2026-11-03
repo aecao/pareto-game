@@ -131,6 +131,9 @@ function incomePopup(feature, reference = null) {
 }
 
 function incomeMapStyle(feature, metadata = incomeData?.metadata) {
+  if (feature.properties.dataset === "housing_mode") {
+    return { color: "#ffffff", weight: 0.3, fillColor: HousingModeModel.color(feature.properties, metadata), fillOpacity: 0.92 };
+  }
   if (feature.properties.dataset === "population") {
     return { color: "#52677e", weight: 0.5,
       fillColor: PopulationModel.color(feature.properties.density, metadata), fillOpacity: 0.8 };
@@ -168,7 +171,7 @@ function openIncomeArea(geoid) {
     return;
   }
   incomeSelector.value = geoid;
-  if (incomeData?.metadata.dataset !== "population") {
+  if (!["population", "housing_mode"].includes(incomeData?.metadata.dataset)) {
     map.fitBounds(layer.getBounds(), { padding: [20, 20], maxZoom: 15, animate: false });
   }
   layer.openPopup();
@@ -198,19 +201,21 @@ async function loadIncome() {
   const reverse = incomeDataset.value === "do";
   const jobs = incomeDataset.value === "jobs";
   const population = incomeDataset.value === "population";
+  const housing = incomeDataset.value === "housing_mode";
   const od = incomeDataset.value === "od" || reverse;
   if ((transport && scale !== "tract") || ((od || jobs) && !["tract", "neighborhood"].includes(scale)) ||
       (population && !["block_group", "tract", "neighborhood"].includes(scale))) {
     throw new Error("Unsupported geography for this dataset.");
   }
-  const cacheKey = od || jobs || population ? `${incomeDataset.value}:${scale}` : transport ? "transport:tract" : scale;
-  const datasetLabel = population ? "population density" : jobs ? "jobs/industry" : reverse ? "destination-origin" : od ? "origin-destination" : transport ? "transportation" : "household income";
-  const definition = IncomeModel.scales[scale];
+  const cacheKey = housing ? "housing_mode:lots" : od || jobs || population ? `${incomeDataset.value}:${scale}` : transport ? "transport:tract" : scale;
+  const datasetLabel = housing ? "housing by mode" : population ? "population density" : jobs ? "jobs/industry" : reverse ? "destination-origin" : od ? "origin-destination" : transport ? "transportation" : "household income";
+  const definition = housing ? { label: "Lot", plural: "residential lots" } : IncomeModel.scales[scale];
   const state = document.getElementById("income-state");
   const retry = document.getElementById("income-retry");
-  state.textContent = `Loading NYC ${definition.plural} ${datasetLabel}...`;
-  document.querySelector(".map-shell").setAttribute("aria-label",
-    `Interactive ${datasetLabel} map of NYC ${definition.plural}`);
+  state.textContent = housing ? "Loading Queens pilot residential lots (housing by mode)..." : `Loading NYC ${definition.plural} ${datasetLabel}...`;
+  document.querySelector(".map-shell").setAttribute("aria-label", housing
+    ? "Interactive housing by mode map of residential lots in the Queens siting pilot area"
+    : `Interactive ${datasetLabel} map of NYC ${definition.plural}`);
   retry.hidden = true;
   incomeSelector.disabled = true;
   document.getElementById("od-threshold").disabled = true;
@@ -233,7 +238,7 @@ async function loadIncome() {
   document.getElementById("jobs-classification").disabled = true;
   incomeHomeBounds = null;
   incomeSelector.replaceChildren(incomeNode("option", "Loading areas...", null, { value: "" }));
-  document.getElementById("income-area-label").textContent = `Open a ${definition.label.toLowerCase()}`;
+  document.getElementById("income-area-label").textContent = housing ? "Lots: click a lot on the map" : `Open a ${definition.label.toLowerCase()}`;
   try {
     let data = incomeCache.get(cacheKey);
     if (!data) {
@@ -244,7 +249,13 @@ async function loadIncome() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       };
-      if (population) {
+      if (housing) {
+        const response = await fetch("assets/housing_mode/lots.json?v=housing-mode-v2", {
+          cache: "no-cache", signal: incomeController.signal,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        data = HousingModeModel.normalize(await response.json());
+      } else if (population) {
         const [counts, geography] = await Promise.all([
           (async () => {
             const response = await fetch(`assets/population/${scale}.json?v=population-v1`, {
@@ -285,15 +296,23 @@ async function loadIncome() {
       incomeCache.set(cacheKey, data);
     }
     if (request !== incomeRequest) return;
-    const reference = !od && !jobs && !population && scale === "neighborhood"
+    const reference = !od && !jobs && !population && !housing && scale === "neighborhood"
       ? data.features.find((feature) => feature.properties.geoid === "MN0801-RI")?.properties : null;
-    if (!od && !jobs && !population && scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
+    if (!od && !jobs && !population && !housing && scale === "neighborhood" && !reference) throw new Error("Missing Roosevelt Island neighborhood reference.");
     L.geoJSON(data, {
       renderer: incomeAreaRenderer,
       style: feature => incomeMapStyle(feature, data.metadata),
       onEachFeature(feature, layer) {
         const p = feature.properties;
         const label = p.scale ? p.name : `${p.borough} ${p.name}`;
+        if (housing) {
+          layer.bindTooltip(`${p.name}: ${incomeNumber(p.units)} unit${p.units === 1 ? "" : "s"}, ${housingModeLabels[p.tenure_group].toLowerCase()} (modeled ${Math.round(p.owner_share * 100)}% owner)`);
+          layer.bindPopup(() => housingModePopup(feature), {
+            className: "income-popup", maxHeight: 500, minWidth: 260, maxWidth: 380, autoPan: false,
+          });
+          incomeAreaLayers.set(p.bbl, layer);
+          return;
+        }
         if (population) {
           layer.bindTooltip(`${label}: ${p.density === null ? "no land area; density not applicable"
             : `${incomeNumber(Math.round(p.density))} people per land sq mile`}`);
@@ -337,16 +356,21 @@ async function loadIncome() {
     }).addTo(incomeGroup);
     incomeHomeBounds = incomeGroup.getBounds();
     if (!incomeHomeBounds.isValid()) throw new Error("No usable income-area bounds.");
-    incomeSelector.replaceChildren(incomeNode("option", `Choose a ${definition.label.toLowerCase()}`, null, { value: "" }));
-    const sorted = [...data.features].sort((a, b) => a.properties.borough.localeCompare(b.properties.borough)
-      || a.properties.name.localeCompare(b.properties.name, "en", { numeric: true }));
-    for (const { properties: p } of sorted) {
-      const label = scale === "block_group"
-        ? `${p.borough}: Tract ${p.tract}, BG ${p.block_group} (${p.geoid})`
-        : `${p.name} (${p.geoid})`;
-      incomeSelector.append(incomeNode("option", label, null, { value: p.geoid }));
+    if (housing) {
+      incomeSelector.replaceChildren(incomeNode("option", "Click a lot on the map", null, { value: "" }));
+    } else {
+      incomeSelector.replaceChildren(incomeNode("option", `Choose a ${definition.label.toLowerCase()}`, null, { value: "" }));
+      const sorted = [...data.features].sort((a, b) => a.properties.borough.localeCompare(b.properties.borough)
+        || a.properties.name.localeCompare(b.properties.name, "en", { numeric: true }));
+      for (const { properties: p } of sorted) {
+        const label = scale === "block_group"
+          ? `${p.borough}: Tract ${p.tract}, BG ${p.block_group} (${p.geoid})`
+          : `${p.name} (${p.geoid})`;
+        incomeSelector.append(incomeNode("option", label, null, { value: p.geoid }));
+      }
     }
     incomeData = data;
+    if (housing) housingModeLegend(data);
     if (population) populationLegend(data);
     if (jobs) {
       jobsIndustryLegend(data);
@@ -363,13 +387,15 @@ async function loadIncome() {
       document.getElementById("od-width-legend").textContent =
         `Fixed square-root scale across selected ${reverse ? "workplaces" : "origins"} at this geography (${incomeNumber(data.metadata.max_pair_jobs)} links at maximum size): ${minimum}-${maximum} px lines and ${data.metadata.display.min_node_radius_px}-${data.metadata.display.max_node_radius_px} px linked-node radii. Larger counts give thicker lines and larger nodes; exact counts are in tooltips and the table.`;
     }
-    incomeSelector.disabled = false;
+    incomeSelector.disabled = housing;
     document.getElementById("od-show-all").disabled = !(od && !reverse && scale === "neighborhood");
     if (document.body.dataset.mode === "income") {
       incomeGroup.addTo(map);
       fitIncomeMap();
     }
-    state.textContent = population
+    state.textContent = housing
+      ? `${incomeNumber(data.features.length)} residential lots (${incomeNumber(data.metadata.total_units)} units) in the Queens siting pilot area. Color shows modeled tenure; darker means more units. Click a lot for details.`
+      : population
       ? `${incomeNumber(data.metadata.total_population)} estimated residents across ${incomeNumber(data.features.length)} ${definition.plural}. Darker means greater population per square mile of land.`
       : od
       ? `${incomeNumber(data.features.length)} ${reverse ? "workplace" : "origin"} ${scale === "neighborhood" ? "NTA areas" : "tracts"} loaded. Select an area to show its NYC connections.`
@@ -395,15 +421,18 @@ incomeDataset.addEventListener("change", () => {
   const reverse = incomeDataset.value === "do";
   const jobs = incomeDataset.value === "jobs";
   const population = incomeDataset.value === "population";
+  const housing = incomeDataset.value === "housing_mode";
   const od = incomeDataset.value === "od" || reverse;
-  const nonHousehold = transport || od || jobs || population;
+  const nonHousehold = transport || od || jobs || population || housing;
   if (incomePreviousDataset === "household") householdScale = incomeScale.value;
   if (incomePreviousDataset === "od") originDestinationScale = incomeScale.value;
   if (incomePreviousDataset === "do") destinationOriginScale = incomeScale.value;
   if (incomePreviousDataset === "jobs") jobsIndustryScale = incomeScale.value;
   if (incomePreviousDataset === "population") populationScale = incomeScale.value;
   incomeScale.value = population ? populationScale : jobs ? jobsIndustryScale : reverse ? destinationOriginScale : od ? originDestinationScale : transport ? "tract" : householdScale;
-  incomeScale.disabled = transport;
+  incomeScale.disabled = transport || housing;
+  incomeScale.hidden = housing;
+  document.querySelector('label[for="income-scale"]').hidden = housing;
   for (const option of incomeScale.options ?? []) {
     option.disabled = population ? !["block_group", "tract", "neighborhood"].includes(option.value)
       : od || jobs ? !["tract", "neighborhood"].includes(option.value) : transport && option.value !== "tract";
@@ -415,8 +444,9 @@ incomeDataset.addEventListener("change", () => {
   document.getElementById("od-controls").hidden = !od;
   document.getElementById("jobs-industry-controls").hidden = !jobs;
   document.getElementById("population-controls").hidden = !population;
+  document.getElementById("housing-mode-controls").hidden = !housing;
   document.getElementById("nhgis-citation").hidden = od || jobs;
-  document.getElementById("data-source-eyebrow").textContent = od || jobs ? "DATA / LODES 2023" : "DATA / ACS 2024";
+  document.getElementById("data-source-eyebrow").textContent = od || jobs ? "DATA / LODES 2023" : housing ? "DATA / ACS 2024 + PLUTO 26v2" : "DATA / ACS 2024";
   loadIncome();
 });
 incomeSelector.addEventListener("change", () => {

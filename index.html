@@ -215,6 +215,7 @@
             <option value="do">destination-origin</option>
             <option value="jobs">jobs/industry</option>
             <option value="population">population</option>
+            <option value="housing_mode">housing by mode</option>
           </select>
           <p class="section-note" data-household-copy>Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
           <p id="transport-source-note" class="section-note" hidden>Tracts only. B08119 stacks six commute modes by individual earnings (2024 dollars), with original tract 90% MOEs. Beside it, a B08301 pie shows ten commute categories, summed from whole block groups with approximate root-sum-of-squares MOEs. Both use 2020–2024 ACS estimates; their worker universes differ. No Roosevelt Island comparison. Grey means zero estimated workers with earnings, not missing data; areas remain clickable. Home fits NYC. <a href="https://data.census.gov/table/ACSDT5Y2024.B08119">B08119</a> · <a href="https://data.census.gov/table/ACSDT5Y2024.B08301">B08301</a>.</p>
@@ -234,6 +235,11 @@
           <div id="population-controls" hidden>
             <p class="section-note">2020-2024 ACS five-year total population (B01003) via IPUMS NHGIS. Darker blue means greater population density, measured in people per square mile of land. Official TIGER/Line 2024 land area excludes water; the full polygons remain selectable. Block group, tract and NTA scales use the same color breaks. NTA geography includes the custom Roosevelt Island split. Click an area for population, density, land area and survey uncertainty.</p>
             <div id="population-legend" aria-label="Population density: people per square mile of land"></div>
+          </div>
+          <div id="housing-mode-controls" hidden>
+            <p class="section-note">Individual MapPLUTO 26v2 lots from the Siting pilot area (Queens CD1–2; Roosevelt Island is excluded for now), not combined into sites. Only primarily residential lots (PLUTO LandUse 01–04) with at least one residential unit are shown. Darker means more residential units (UnitsRes) — units, not residents.</p>
+            <p class="section-note">Color is a modeled estimate, not lot-level tenure: each lot takes the 2020–2024 ACS B25032 owner/renter split for structures of its size (units per building) in its block group, falling back to its tract, then the pilot area, when that cell has no occupied units. Condo billing lots carry all condo units and receive the same size-based estimate. Click a lot for its units, building class and the ACS counts behind its color.</p>
+            <div id="housing-mode-legend" aria-label="Housing by mode legend"></div>
           </div>
           <div id="jobs-industry-controls" hidden>
             <label for="jobs-classification">Jobs classification</label>
@@ -476,7 +482,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
-    <script src="siting.js?v=population-v1"></script>
+    <script src="siting.js?v=housing-mode-v1"></script>
     <script src="connectivity-model.js?v=three-bridges-v9"></script>
     <script src="connectivity.js?v=three-bridges-v9"></script>
     <script src="market-model.js"></script>
@@ -494,8 +500,10 @@
     <script src="origin-destination-model.js?v=data-od-v11"></script>
     <script src="jobs-industry-model.js?v=jobs-v6"></script>
     <script src="population-model.js?v=population-v1"></script>
-    <script src="income.js?v=population-v1"></script>
+    <script src="housing-mode-model.js?v=housing-mode-v1"></script>
+    <script src="income.js?v=housing-mode-v2"></script>
     <script src="population.js?v=population-v1"></script>
+    <script src="housing-mode.js?v=housing-mode-v1"></script>
     <script src="jobs-industry.js?v=jobs-v6"></script>
     <script src="origin-destination.js?v=data-hit-testing-v1"></script>
     <script src="explore-model.js"></script>

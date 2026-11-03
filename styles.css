@@ -476,3 +476,9 @@ body[data-mode="exploration"] .layer-section > .section-note { display: block; }
   .market-table { min-width: 0; }
   .market-table th, .market-table td { padding: 10px 7px; overflow-wrap: anywhere; }
 }
+
+.housing-mode-legend-table { border-collapse: collapse; font-size: 0.8rem; margin: 0.5rem 0; }
+.housing-mode-legend-table caption { text-align: left; margin-bottom: 0.25rem; }
+.housing-mode-legend-table th, .housing-mode-legend-table td { padding: 2px 6px; text-align: center; font-weight: normal; }
+.housing-mode-legend-table th[scope="row"] { text-align: right; }
+.housing-mode-swatch { display: inline-block; width: 1.6rem; height: 0.9rem; border: 1px solid rgba(0, 0, 0, 0.15); vertical-align: middle; }
