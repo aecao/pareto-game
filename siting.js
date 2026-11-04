@@ -299,6 +299,8 @@ function setStudyMode(mode) {
   document.querySelector(".map-shell").setAttribute("aria-label", isIncome
     ? incomeDataset.value === "housing_mode"
       ? "Interactive housing by mode map of residential lots in the Queens siting pilot area"
+      : incomeDataset.value === "public_housing"
+      ? `Interactive public housing map of subsidized ${document.getElementById("public-housing-display").value === "lot" ? "housing lots" : "properties"} in NYC`
       : `Interactive ${incomeDataset.value === "population" ? "population density" : incomeDataset.value === "jobs" ? "jobs/industry" : incomeDataset.value === "do" ? "destination-origin" : incomeDataset.value === "od" ? "origin-destination" : incomeDataset.value === "transport" ? "transportation" : "household income"} map of NYC ${IncomeModel.scales[incomeScale.value].plural}`
     : "Interactive map of Roosevelt Island");
   document.querySelectorAll(".exploration-only").forEach((element) => { element.hidden = mode !== "exploration"; });

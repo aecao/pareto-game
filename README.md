@@ -948,3 +948,38 @@ building class, the ACS cell counts and the fallback level.
 
 The scale control is hidden and the area selector is disabled; click lots on the map.
 Regenerate with `POSTGIS/01_sites/export_housing_mode.py`.
+
+# Public housing Data view
+
+The **public housing** dataset shows citywide properties from the NYU Furman Center Subsidized Housing
+Database (CoreData.nyc, extract 2026-05-05; redistribution on this site confirmed by the project owner).
+Each property is a dot at the source latitude/longitude. There are 17,530 properties with
+1,115,579 residential units; 233 have unknown unit counts. Roosevelt Island (Manhattan block 1373, 3 rows)
+is excluded for now. Only 697 properties are NYCHA. The rest are other publicly subsidized housing.
+
+- **Color:** one primary type per property, by precedence: NYCHA, HUD (project-based/financed), Mitchell-Lama,
+  LIHTC, HPD program, then tax incentive only (421-a/J-51/420-c with no financing, program or zoning subsidy).
+  Primary counts are 697 / 1,124 / 213 / 2,398 / 4,409 / 8,689.
+- **Size:** dot radius grows with the square root of units, from 2.5 px up to 14 px at 3,000 units
+  (ASSUMPTION, a display choice). Unknown counts use the smallest dot.
+- **Subsidy type filter:** shows every property carrying that type, so programs overlap.
+  NYCHA 697, HUD 1,140, Mitchell-Lama 269, LIHTC 2,864, HPD 6,868, tax only 8,689.
+  Changing it does not move the map.
+- **Popup:** units, buildings, year built, owner, other types, and the source `prog_*` codes with start/end
+  dates. Codes are shown raw rather than expanded, to avoid guessing names.
+
+`assets/public_housing/properties.json` is about 2.4 MB. It is a schema-versioned row payload decoded and
+validated by `public-housing-model.js`. The scale control is hidden and the area selector is disabled.
+Regenerate with `POSTGIS/00_clean/clean_public_housing.py`. Tests: `tests/public-housing-model.test.cjs`.
+
+**Display: by lot.** The Display dropdown switches between dots ("by property") and MapPLUTO 26v2 lot
+polygons ("by lot"). Switching does not move the map. Every property is assigned to exactly one lot:
+17,498 match by BBL, and the other 32 are assigned to the lot their point falls in (mostly condo billing or
+merged lots). Those 32 are flagged in the popup. This gives 17,514 lots; 5 lots hold more than one property
+(at most 11). On a shared lot, units are summed, and the color comes from the highest-precedence type
+present. The lot popup lists every property on the lot.
+Color is the lot's primary type. The shade gets darker with units per lot, using breaks of
+<10 / 10-24 / 25-59 / 60-149 / 150+ (ASSUMPTION, close to the unit quartiles); unknown units use the
+lightest shade. The Subsidy type filter applies to lots too, matching any type on the lot.
+`assets/public_housing/lots.json` (about 1.9 MB, polygons simplified 1 ft) is cross-checked against
+`properties.json` on load. Regenerate with `POSTGIS/01_sites/export_public_housing_lots.py`.

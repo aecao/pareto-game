@@ -216,6 +216,7 @@
             <option value="jobs">jobs/industry</option>
             <option value="population">population</option>
             <option value="housing_mode">housing by mode</option>
+            <option value="public_housing">public housing</option>
           </select>
           <p class="section-note" data-household-copy>Household income across all five NYC boroughs. 2020–2024 ACS five-year B19001 estimates in 2024 dollars, via IPUMS NHGIS. Charts count households, not people.</p>
           <p id="transport-source-note" class="section-note" hidden>Tracts only. B08119 stacks six commute modes by individual earnings (2024 dollars), with original tract 90% MOEs. Beside it, a B08301 pie shows ten commute categories, summed from whole block groups with approximate root-sum-of-squares MOEs. Both use 2020–2024 ACS estimates; their worker universes differ. No Roosevelt Island comparison. Grey means zero estimated workers with earnings, not missing data; areas remain clickable. Home fits NYC. <a href="https://data.census.gov/table/ACSDT5Y2024.B08119">B08119</a> · <a href="https://data.census.gov/table/ACSDT5Y2024.B08301">B08301</a>.</p>
@@ -240,6 +241,25 @@
             <p class="section-note">Individual MapPLUTO 26v2 lots from the Siting pilot area (Queens CD1–2; Roosevelt Island is excluded for now), not combined into sites. Only primarily residential lots (PLUTO LandUse 01–04) with at least one residential unit are shown. Darker means more residential units (UnitsRes) — units, not residents.</p>
             <p class="section-note">Color is a modeled estimate, not lot-level tenure: each lot takes the 2020–2024 ACS B25032 owner/renter split for structures of its size (units per building) in its block group, falling back to its tract, then the pilot area, when that cell has no occupied units. Condo billing lots carry all condo units and receive the same size-based estimate. Click a lot for its units, building class and the ACS counts behind its color.</p>
             <div id="housing-mode-legend" aria-label="Housing by mode legend"></div>
+          </div>
+          <div id="public-housing-controls" hidden>
+            <label for="public-housing-display">Display</label>
+            <select id="public-housing-display">
+              <option value="property">by property</option>
+              <option value="lot">by lot</option>
+            </select>
+            <label for="public-housing-type">Subsidy type</label>
+            <select id="public-housing-type" disabled>
+              <option value="all">All subsidized properties</option>
+              <option value="nycha">NYCHA</option>
+              <option value="hud">HUD project-based / financed</option>
+              <option value="mitchell_lama">Mitchell-Lama</option>
+              <option value="lihtc">LIHTC</option>
+              <option value="hpd">HPD program</option>
+              <option value="tax_only">Tax incentive only</option>
+            </select>
+            <p class="section-note">Citywide properties from the NYU Furman Center Subsidized Housing Database (CoreData.nyc, 2026-05-05 extract), placed at the source latitude/longitude. Roosevelt Island is excluded for now. Includes NYCHA public housing plus other publicly subsidized housing. Programs overlap: each dot takes one color by precedence (NYCHA, HUD, Mitchell-Lama, LIHTC, HPD, then tax incentive only, meaning 421-a/J-51/420-c with no other subsidy). The type filter shows every property carrying that type, so a NYCHA RAD site can also appear under LIHTC. Click a dot for units, owner and program dates. "By lot" draws the MapPLUTO 26v2 lot for each property (by BBL; 32 properties whose BBL is not in PLUTO use the lot containing their point). Lots holding several properties are combined: units are summed and the lot takes the highest-precedence type, shaded darker with more units.</p>
+            <div id="public-housing-legend" aria-label="Public housing subsidy type colors"></div>
           </div>
           <div id="jobs-industry-controls" hidden>
             <label for="jobs-classification">Jobs classification</label>
@@ -482,7 +502,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
-    <script src="siting.js?v=housing-mode-v1"></script>
+    <script src="siting.js?v=public-housing-v2"></script>
     <script src="connectivity-model.js?v=three-bridges-v9"></script>
     <script src="connectivity.js?v=three-bridges-v9"></script>
     <script src="market-model.js"></script>
@@ -501,9 +521,11 @@
     <script src="jobs-industry-model.js?v=jobs-v6"></script>
     <script src="population-model.js?v=population-v1"></script>
     <script src="housing-mode-model.js?v=housing-mode-v1"></script>
-    <script src="income.js?v=housing-mode-v2"></script>
+    <script src="public-housing-model.js?v=public-housing-v2"></script>
+    <script src="income.js?v=public-housing-v2"></script>
     <script src="population.js?v=population-v1"></script>
     <script src="housing-mode.js?v=housing-mode-v1"></script>
+    <script src="public-housing.js?v=public-housing-v2"></script>
     <script src="jobs-industry.js?v=jobs-v6"></script>
     <script src="origin-destination.js?v=data-hit-testing-v1"></script>
     <script src="explore-model.js"></script>
