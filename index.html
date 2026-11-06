@@ -43,7 +43,7 @@
             <span class="section-index">01</span>
           </div>
           <div id="connectivity-origins" class="origin-switch" role="group" aria-label="Origin points"></div>
-          <p id="connectivity-origin-note" class="section-note">Loading eight origins with precomputed walking results.</p>
+          <p id="connectivity-origin-note" class="section-note">Loading eight origins with precomputed walking and biking results.</p>
         </section>
 
         <section class="panel-section layer-section exploration-only">
@@ -103,16 +103,16 @@
         </section>
 
         <section class="connectivity-only connectivity-parameters" hidden aria-labelledby="connectivity-heading">
-          <span class="eyebrow">ROOSEVELT ISLAND / WALKING PROTOTYPE</span>
+          <span class="eyebrow">ROOSEVELT ISLAND / ACCESS PROTOTYPE</span>
           <h1 id="connectivity-heading">Connectivity</h1>
-          <p class="section-note">Select an origin above. All eight origins have precomputed walking results for every bridge combination. Alternate locations and access paths remain provisional.</p>
+          <p class="section-note">Select an origin above. All eight origins have walking and biking results for every bridge combination. Alternate locations and access paths remain provisional.</p>
+          <div class="connectivity-travel-modes" role="group" aria-label="Travel mode">
+              <button type="button" class="connectivity-travel-mode is-active" disabled data-connectivity-travel-mode="walking" aria-pressed="true">Walking</button>
+              <button type="button" class="connectivity-travel-mode" disabled data-connectivity-travel-mode="biking" aria-pressed="false" aria-describedby="connectivity-biking-note">Biking</button>
+          </div>
+          <p id="connectivity-biking-note" class="section-note">Biking: assumed 13 mph on eligible streets and bridge decks. Bicycle directions and ordinary-street one-ways are respected. Untagged pedestrian paths and access connectors require dismounting at 3 mph. Stairs and unverified restricted roads are excluded; permissions and turn restrictions remain incomplete.</p>
           <fieldset id="connectivity-fields" disabled>
-            <legend>Walking scenario</legend>
-            <div class="connectivity-travel-modes" role="group" aria-label="Travel mode">
-              <button type="button" class="connectivity-travel-mode is-active" aria-pressed="true">Walking</button>
-              <button type="button" class="connectivity-travel-mode" aria-pressed="false" disabled aria-describedby="connectivity-biking-note">Biking</button>
-            </div>
-            <p id="connectivity-biking-note" class="section-note">Biking isochrones are not available yet.</p>
+            <legend>Travel scenario</legend>
             <div id="connectivity-bridges" class="connectivity-bridges" role="group" aria-label="Proposed bridges"></div>
             <label for="connectivity-budget">Travel-time budget: <output id="connectivity-budget-value" for="connectivity-budget">45 min</output></label>
             <input id="connectivity-budget" type="range" min="0" max="60" step="1" value="45">
@@ -131,9 +131,10 @@
             <summary>Method &amp; limitations</summary>
             <p>Precomputed walking reachability for every on/off combination of the three proposed bridges, not live routing. Every scenario starts at the selected origin, linked to the nearest ground-level street on its side of the river. Main Street retains the island-centroid origin. Alternate origin locations and straight access connectors are provisional, not verified entrances or public paths. Bridge ends link to the nearest point on the nearest ground-level street on the same side of the river. Constant 3 mph; no slope, crossing, stairs or elevator delay, except a 3-minute penalty for getting on or off LIC–Midtown at its Roosevelt Island midpoint (walking straight across is not penalised). Bridge alignments and access links are provisional, not engineered or legally approved.</p>
             <p>Source node IDs and endpoint levels define connectivity. Shorelines, boundary lines, vehicle-only roads and unbuilt streets are excluded. Sidewalks, crossings, barriers and access hours remain incomplete; this is not a pedestrian navigation service or step-free analysis.</p>
-            <p>Lines show reachable street intervals, not all reachable land, shaded in 5-minute walking-time bands (network time, not straight-line distance). The budget slider covers 0–60 minutes; metrics are computed in the browser and match the precomputed 15/30/45/60-minute checks. Node counts are network diagnostics, not population or jobs. The baseline can reach Queens over the existing Roosevelt Island Bridge walkway; the tram and subway are not modeled.</p>
-            <p>Roosevelt Island internal routing is provisional. No cycling, transit, vehicle, rent or property-value effects are modeled. Siting rankings are unchanged.</p>
-            <a id="connectivity-download" href="assets/connectivity/walking.json?v=walking-origins-v1" download>Download selected origin's walking snapshot (JSON)</a>
+            <p>Lines show reachable street intervals, not all reachable land, shaded in 5-minute travel-time bands (network time, not straight-line distance). The budget slider covers 0–60 minutes; metrics are computed in the browser and match the precomputed 15/30/45/60-minute checks. Node counts are network diagnostics, not population or jobs. The baseline uses the existing Roosevelt Island Bridge walkway, with source bicycle directions and dismount links in biking mode; the tram and subway are not modeled.</p>
+            <p>Biking uses a separate directed LION network at an assumed 13 mph, with dismount-and-walk links at 3 mph. Explicit bicycle directions override street traffic directions; untagged ordinary streets follow their one-ways. Untagged pedestrian paths assume dismount access. Stairs, unknown bicycle directions, and undesignated vehicle-only roads, highways and tunnels are excluded. Proposed bridges assume two-way cycling. Turn restrictions, bicycle bans, slopes, traffic stress and access permissions remain incomplete.</p>
+            <p>Roosevelt Island internal routing is provisional. No transit, vehicle, rent or property-value effects are modeled. Siting rankings are unchanged.</p>
+            <a id="connectivity-download" href="assets/connectivity/walking.json?v=biking-origins-v1" download>Download selected origin and mode snapshot (JSON)</a>
           </details>
         </section>
 
@@ -353,8 +354,8 @@
       <aside class="connectivity-only connectivity-results" hidden aria-label="Connectivity results">
         <div class="results-heading">
           <span class="eyebrow">BASELINE / PROPOSED BRIDGES</span>
-          <h2>Walking access</h2>
-          <p id="connectivity-summary" role="status" aria-live="polite">Waiting for walking data.</p>
+          <h2 id="connectivity-access-heading">Walking access</h2>
+          <p id="connectivity-summary" role="status" aria-live="polite">Waiting for reachability data.</p>
           <p class="siting-warning">Hypothetical landing and approach geometry. Connectivity does not establish feasibility.</p>
           <p id="connectivity-provenance" class="section-note"></p>
         </div>
@@ -503,8 +504,8 @@
     <script src="app.js"></script>
     <script src="siting-model.js"></script>
     <script src="siting.js?v=public-housing-v2"></script>
-    <script src="connectivity-model.js?v=walking-origins-v1"></script>
-    <script src="connectivity.js?v=walking-origins-v1"></script>
+    <script src="connectivity-model.js?v=biking-origins-v1"></script>
+    <script src="connectivity.js?v=biking-origins-v1"></script>
     <script src="market-model.js"></script>
     <script src="market.js"></script>
     <script src="model-interaction.js"></script>

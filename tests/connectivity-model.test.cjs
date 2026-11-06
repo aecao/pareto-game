@@ -65,6 +65,7 @@ function rendererHarness(fetch) {
   const context = vm.createContext({
     ConnectivityModel: model,
     console, fetch,
+    Response, DecompressionStream,
     map: { panTo() {} },
     document: {
       body: { dataset: { mode: "connectivity" } },
@@ -193,14 +194,95 @@ test("Connectivity scripts, fetch and download share a cache-busting release", (
   assert.ok(loader.includes(`fetch("assets/connectivity/walking.json?v=${version}", { cache: "no-cache" })`));
 });
 
-test("travel modes show walking and unavailable biking without a map comparison selector", () => {
+test("travel modes expose walking and biking without a map comparison selector", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const renderer = fs.readFileSync(path.join(__dirname, "../connectivity.js"), "utf8");
   assert.ok(html.includes('aria-pressed="true">Walking</button>'));
-  assert.ok(html.includes('disabled aria-describedby="connectivity-biking-note">Biking</button>'));
+  assert.ok(html.includes('data-connectivity-travel-mode="biking" aria-pressed="false" aria-describedby="connectivity-biking-note">Biking</button>'));
+  assert.ok(renderer.includes('button.dataset.connectivityTravelMode'));
   assert.ok(html.indexOf('aria-label="Travel mode"') < html.indexOf('id="connectivity-bridges"'));
   assert.ok(!html.includes('id="connectivity-scenario"'));
   assert.ok(!renderer.includes("connectivity-scenario"));
+});
+
+test("one-way bicycle shading never enters from the forbidden end", () => {
+  const feature = {
+    geometry: { type: "LineString", coordinates: [[-73.95, 40.76], [-73.94, 40.76]] },
+    properties: { u: 0, v: 1, m: 10, l: 100, f: [0, 1], d: "FT" },
+  };
+  assert.equal(model.trim(feature, [null, 0], 5).fraction, 0);
+  assert.equal(model.bands(feature, [null, 0], 5, 5).length, 0);
+  assert.equal(model.trim(feature, [0, 0], 5).fraction, .5);
+  assert.equal(model.bands(feature, [0, 0], 5, 5).reduce((n, p) => n + p.to - p.from, 0), .5);
+  feature.properties.d = "TF";
+  assert.equal(model.trim(feature, [0, null], 5).fraction, 0);
+  assert.equal(model.bands(feature, [0, null], 5, 5).length, 0);
+  assert.equal(model.trim(feature, [0, 0], 5).fraction, .5);
+  assert.equal(model.bands(feature, [0, 0], 5, 5).reduce((n, p) => n + p.to - p.from, 0), .5);
+});
+
+test("cycling request cannot be replaced by a late walking origin response", async () => {
+  const pending = new Map();
+  const { get, run } = rendererHarness((url) => new Promise((resolve) => pending.set(url, resolve)));
+  const walking = run('selectConnectivityOrigin("coler", "walking")');
+  // Return to cached Main Street while a different mode's request remains in flight.
+  const biking = run('selectConnectivityOrigin("coler", "biking")');
+  assert.ok([...pending.keys()].some((url) => url.includes("biking_coler")));
+  assert.equal(run("connectivityData"), null);
+  const walkingUrl = [...pending.keys()].find((url) => url.includes("walking_coler"));
+  pending.get(walkingUrl)({ ok: true, json: async () => alternateSnapshots.get("coler") });
+  await walking;
+  assert.equal(run("connectivityData"), null);
+  assert.equal(run("connectivityTravelMode"), "biking");
+  await run('selectConnectivityOrigin("main_street", "walking")');
+  const bikingUrl = [...pending.keys()].find((url) => url.includes("biking_coler"));
+  pending.get(bikingUrl)({ ok: false, status: 503 });
+  await biking;
+  assert.equal(run("connectivityTravelMode"), "walking");
+  assert.equal(run("connectivityData"), data);
+  assert.equal(get("connectivity-error").hidden, true);
+});
+
+test("biking gzip loading is lossless and corrupted streams surface an error", async () => {
+  const { context, run } = rendererHarness();
+  const zlib = require("node:zlib");
+  const payload = { schema_version: 7, times: [null, 0, 1.234567890123] };
+  context.testResponse = new Response(zlib.gzipSync(JSON.stringify(payload)));
+  assert.deepEqual(await run('readConnectivitySnapshot(testResponse, "biking")'), payload);
+  context.testResponse = new Response("not gzip");
+  await assert.rejects(run('readConnectivitySnapshot(testResponse, "biking")'));
+});
+
+test("biking loads the selected origin, preserves controls, bounds its cache and restores walking", async () => {
+  const requests = [];
+  const { context, get, run } = rendererHarness(async (url) => {
+    requests.push(url);
+    const id = url.match(/biking_([a-z_]+)\.json\.gz/)[1];
+    return new Response(fs.readFileSync(path.join(__dirname, "..", "assets", "connectivity", `biking_${id}.json.gz`)));
+  });
+  const initialMetrics = JSON.stringify(get("connectivity-metrics").children);
+  await run('selectConnectivityOrigin("cornell_tech", "biking")');
+  assert.equal(run("connectivityData.schema_version"), 7);
+  assert.equal(run("connectivityTravelMode"), "biking");
+  assert.equal(get("connectivity-access-heading").textContent, "Biking access");
+  assert.equal(get("connectivity-budget").value, "45");
+  assert.equal(get("connectivity-fields").disabled, false);
+  assert.match(get("connectivity-provenance").textContent, /13 mph cycling \/ 3 mph dismount/);
+  assert.match(get("connectivity-download").href, /biking_cornell_tech\.json\.gz/);
+  await run('selectConnectivityOrigin("main_street", "walking")');
+  assert.equal(JSON.stringify(get("connectivity-metrics").children), initialMetrics);
+  await run('selectConnectivityOrigin("cornell_tech", "biking")');
+  assert.equal(requests.length, 1);
+  await run('selectConnectivityOrigin("long_island_city", "biking")');
+  assert.equal(requests.length, 2);
+  assert.equal(run('[...connectivitySnapshots.keys()].filter(k => k.startsWith("biking:")).length'), 1);
+  assert.equal(run('connectivitySnapshots.has("biking:cornell_tech")'), false);
+  assert.equal(get("connectivity-fields").disabled, false);
+  assert.match(get("connectivity-summary").textContent, /Long Island City/);
+  // Exercise the same selection after returning to the original mode.
+  await run('selectConnectivityOrigin("main_street", "walking")');
+  assert.equal(get("connectivity-access-heading").textContent, "Walking access");
+  assert.equal(context.testData, run("connectivityData"));
 });
 
 test("verified walking snapshot validates without mutation", () => {

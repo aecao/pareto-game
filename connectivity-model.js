@@ -36,19 +36,29 @@
     requireValue(ids.length === new Set(selected).size, "unknown bridge selection");
     return ids.length ? ids.join("+") : "baseline";
   }
-  function validate(data, origin = null) {
+  function validate(data, origin = null, travelMode = "walking") {
     const alternate = origin !== null;
-    requireValue(data && data.schema_version === (alternate ? 6 : 5), "unsupported schema");
+    const biking = travelMode === "biking";
+    requireValue(["walking", "biking"].includes(travelMode), "travel mode");
+    requireValue(data && data.schema_version === (biking ? 7 : (alternate ? 6 : 5)), "unsupported schema");
+    requireValue(!biking || alternate, "biking origin missing");
     requireValue(data.settings?.origin_method === (alternate ? "configured_point_with_nearest_street_connector"
       : "roosevelt_island_centroid_with_nearest_street_connector"), "unexpected origin method");
     if (alternate) {
       const saved = data.settings.selected_origin;
-      requireValue(origin.id !== "main_street" && saved?.id === origin.id && saved.name === origin.name
+      requireValue((biking || origin.id !== "main_street") && saved?.id === origin.id && saved.name === origin.name
         && saved.source === origin.source && saved.provisional === origin.provisional
         && JSON.stringify(saved.coordinates) === JSON.stringify(origin.coordinates), "origin identity");
     }
     requireValue(JSON.stringify(data.settings.thresholds_minutes) === JSON.stringify(BUDGETS), "unexpected budgets");
     requireValue(data.settings.walking_speed_mph === 3, "unexpected speed");
+    if (biking) {
+      requireValue(data.settings.travel_mode === "biking" && data.settings.biking?.speed_mph === 13
+        && data.settings.biking.pedestrian_links === "dismount"
+        && data.settings.biking.access_connectors === "dismount"
+        && data.validation?.directed_bicycle_network === true
+        && data.validation.dismount_links_costed === true, "unverified bicycle model");
+    }
     requireValue(data.provenance?.geometry_crs === "EPSG:4326" && data.provenance.lion === "26c", "missing provenance");
     requireValue(Array.isArray(data.bridges) && data.bridges.length === 3, "bridge count");
     for (const bridge of data.bridges) {
@@ -83,6 +93,9 @@
     }
     for (const feature of data.edges.features) {
       const p = feature.properties;
+      if (biking) {
+        requireValue(["FT", "TF", "TW"].includes(p.d) && ["biking", "dismount"].includes(p.travel_mode), "bicycle edge direction");
+      } else requireValue(p.d === undefined, "bicycle edge in walking snapshot");
       requireValue(feature.geometry.type === "LineString" && typeof p.k === "string" && typeof p.s === "string"
         && Number.isInteger(p.u) && Number.isInteger(p.v) && p.u < nodeCount && p.v < nodeCount
         && finite(p.m) && p.m > 0 && finite(p.l) && p.l > 0
@@ -143,8 +156,8 @@
   // Mirrors project_utils.walking.reachable_parts: walk in from either endpoint until the budget runs out.
   function trim(feature, times, budget) {
     const p = feature.properties;
-    const tu = times[p.u] ?? Infinity;
-    const tv = times[p.v] ?? Infinity;
+    const tu = p.d === "TF" ? Infinity : (times[p.u] ?? Infinity);
+    const tv = p.d === "FT" ? Infinity : (times[p.v] ?? Infinity);
     const a = Math.min(1, Math.max(0, (budget - tu) / p.m));
     const b = Math.min(1, Math.max(0, (budget - tv) / p.m));
     const coordinates = feature.geometry.coordinates;
@@ -157,8 +170,8 @@
   // Splits an edge's reachable intervals at every `step`-minute isochrone, keeping the faster endpoint's time.
   function bands(feature, times, budget, step) {
     const p = feature.properties;
-    const tu = times[p.u] ?? Infinity;
-    const tv = times[p.v] ?? Infinity;
+    const tu = p.d === "TF" ? Infinity : (times[p.u] ?? Infinity);
+    const tv = p.d === "FT" ? Infinity : (times[p.v] ?? Infinity);
     const a = Math.min(1, Math.max(0, (budget - tu) / p.m));
     const b = Math.min(1, Math.max(0, (budget - tv) / p.m));
     let meet = 0.5;

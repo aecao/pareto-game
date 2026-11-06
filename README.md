@@ -424,8 +424,41 @@ with `--web-root` pointing to this checkout. It refuses to overwrite existing
 outputs. Each [alternate walking JSON](assets/connectivity/) is 2.2-4.4 MB;
 only the selected origin is fetched.
 
-Travel-mode buttons above the bridge toggles show **Walking** selected and
-**Biking** disabled (isochrones not available yet). No biking routing is generated.
+Travel-mode buttons above the bridge toggles select **Walking** (default) or
+**Biking**. Both modes cover all eight origins, the same bridge combinations
+and the 0-60 minute slider. Switching modes preserves origin, budget and bridge
+choices; no walking results remain visible while a biking snapshot loads.
+The selected origin/mode download and provenance update together.
+Cycling snapshots are lossless gzip JSON, decoded with the browser's
+`DecompressionStream`; unsupported browsers show an explicit error and retain
+walking as an available mode. Only the most recent biking snapshot is cached
+to limit memory use. The full-resolution analysis stays in the companion
+POSTGIS outputs.
+
+**Biking uses a separate directed graph**, not faster walking times. The
+user-specified constant cycling speed is **13 mph**. LION 26c `BIKE_TRAFDIR`
+controls designated bicycle links (`FT` forward, `TF` reverse, `TW` both);
+untagged ordinary streets use `TrafDir` (`W` forward, `A` reverse, `T` both).
+Untagged pedestrian paths assume dismount-and-walk access at **3 mph**; origin
+and proposed-bridge access connectors are also walked. Proposed decks assume
+two-way cycling at 13 mph, retaining the 3-minute LIC-Midtown island exit penalty.
+Stairs, unknown bicycle directions, and undesignated vehicle-only roads,
+highways and tunnels are excluded. Explicit bicycle designation overrides the
+vehicle-only indicator; a nearby highway does not become generally bikeable.
+The undocumented `NV` direction on one Bronx River Greenway segment is excluded
+and logged. Turn restrictions, cycling bans, public access, traffic stress,
+slopes, signals and crossing delays remain incomplete. This is a planning
+prototype, not safe/legal bicycle navigation or a calibrated travel-time model.
+The companion pipeline is
+[build_biking_origins.py](../../POSTGIS/01_sites/build_biking_origins.py);
+settings are `walking_bridge.biking` in the root POSTGIS configuration.
+The 2026-11-06 batch has 64 independently validated biking scenarios and 256
+15/30/45/60-minute reference summaries, using 158,381 eligible source edges.
+Compressed snapshots are 11.0-13.3 MB each. All eight origins were browser-tested,
+including budget/bridge preservation, zero-minute reach, error/retry recovery
+and unchanged walking Home bounds. Source one-way tags can make an island-origin
+biking baseline more restrictive than walking; those tags are not field-verified.
+
 The map always compares baseline reach with the selected bridges; there is no
 map-comparison dropdown. Baseline remains drawn in front of selected-bridge reach.
 

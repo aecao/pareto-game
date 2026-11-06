@@ -18,12 +18,25 @@ let connectivityLoading = false;
 let connectivityBounds = null;
 let connectivityOrigins = [];
 let connectivityOriginId = "main_street";
+let connectivityTravelMode = "walking";
 let connectivityOriginRenderer = null;
 const connectivitySnapshots = new Map();
 let connectivityOriginRequest = 0;
 
-function walkingSnapshotUrl(id) {
-  return `assets/connectivity/${id === "main_street" ? "walking" : `walking_${id}`}.json?v=walking-origins-v1`;
+function walkingSnapshotUrl(id, travelMode = connectivityTravelMode) {
+  const file = travelMode === "walking" && id === "main_street" ? "walking" : `${travelMode}_${id}`;
+  return `assets/connectivity/${file}.json${travelMode === "biking" ? ".gz" : ""}?v=biking-origins-v1`;
+}
+
+async function readConnectivitySnapshot(response, travelMode) {
+  if (travelMode !== "biking" || response.headers.get("Content-Encoding")?.toLowerCase().includes("gzip")) {
+    return response.json();
+  }
+  if (typeof DecompressionStream !== "function" || !response.body) {
+    throw new Error("This browser cannot decompress biking results. Use an up-to-date browser.");
+  }
+  const stream = response.body.pipeThrough(new DecompressionStream("gzip"));
+  return new Response(stream).json();
 }
 
 function renderOriginMarkers() {
@@ -52,12 +65,22 @@ function renderOriginMarkers() {
   }
 }
 
-async function selectConnectivityOrigin(id) {
+async function selectConnectivityOrigin(id, travelMode = connectivityTravelMode) {
   const origin = connectivityOrigins.find((item) => item.id === id);
   if (!origin) throw new Error(`Unknown Connectivity origin: ${id}`);
+  if (!["walking", "biking"].includes(travelMode)) throw new Error(`Unknown travel mode: ${travelMode}`);
   connectivityOriginId = id;
+  connectivityTravelMode = travelMode;
+  document.getElementById("connectivity-access-heading").textContent =
+    travelMode === "biking" ? "Biking access" : "Walking access";
   const request = ++connectivityOriginRequest;
-  connectivityData = connectivitySnapshots.get(id) ?? null;
+  const cacheKey = travelMode === "walking" ? id : `${travelMode}:${id}`;
+  connectivityData = connectivitySnapshots.get(cacheKey) ?? null;
+  if (travelMode === "biking") {
+    for (const key of connectivitySnapshots.keys()) {
+      if (key.startsWith("biking:") && key !== cacheKey) connectivitySnapshots.delete(key);
+    }
+  }
   connectivityError.hidden = true;
   connectivityRetry.hidden = true;
   for (const button of document.querySelectorAll("#connectivity-origins button")) {
@@ -65,33 +88,48 @@ async function selectConnectivityOrigin(id) {
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-pressed", String(active));
   }
+  for (const button of document.querySelectorAll("[data-connectivity-travel-mode]")) {
+    const active = button.dataset.connectivityTravelMode === travelMode;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
   document.getElementById("connectivity-origin-note").textContent =
-    `${origin.name}: ${origin.provisional ? "provisional location; nearest-street access is assumed, not verified." : "current validated walking origin."}`;
+    `${origin.name}: ${origin.provisional ? "provisional location; nearest-street access is assumed, not verified." : "current source origin."}${travelMode === "biking" ? " Biking 13 mph; dismount links 3 mph." : ""}`;
   renderOriginMarkers();
   renderConnectivity();
   map.panTo([origin.coordinates[1], origin.coordinates[0]]);
   const download = document.getElementById("connectivity-download");
   download.href = walkingSnapshotUrl(id);
   download.hidden = !connectivityData;
-  if (connectivityData) return;
-  connectivityState.textContent = `Loading walking results for ${origin.name}...`;
+  if (connectivityData) {
+    updateConnectivityPanBounds();
+    return;
+  }
+  connectivityState.textContent = `Loading ${travelMode} results for ${origin.name}...`;
   try {
-    const response = await fetch(walkingSnapshotUrl(id), { cache: "no-cache" });
-    if (!response.ok) throw new Error(`Walking snapshot unavailable (${response.status}).`);
-    const data = ConnectivityModel.validate(await response.json(), origin);
-    connectivitySnapshots.set(id, data);
-    if (request !== connectivityOriginRequest) return;
+    const response = await fetch(walkingSnapshotUrl(id, travelMode), { cache: "no-cache" });
+    if (!response.ok) throw new Error(`${travelMode} snapshot unavailable (${response.status}).`);
+    const data = ConnectivityModel.validate(await readConnectivitySnapshot(response, travelMode),
+      travelMode === "walking" && id === "main_street" ? null : origin, travelMode);
+    if (request !== connectivityOriginRequest) {
+      if (travelMode === "walking") connectivitySnapshots.set(cacheKey, data);
+      return;
+    }
+    connectivitySnapshots.set(cacheKey, data);
     connectivityData = data;
     download.hidden = false;
     renderConnectivity();
-    if (document.body.dataset.mode === "connectivity") connectivityGroup.addTo(map);
+    if (document.body.dataset.mode === "connectivity") {
+      connectivityGroup.addTo(map);
+      updateConnectivityPanBounds();
+    }
   } catch (error) {
-    console.error(`Connectivity origin load failed (${id})`, error);
+    console.error(`Connectivity ${travelMode} origin load failed (${id})`, error);
     if (request !== connectivityOriginRequest) return;
-    connectivityError.textContent = `Could not load ${origin.name}: ${error.message}`;
+    connectivityError.textContent = `Could not load ${travelMode} for ${origin.name}: ${error.message}`;
     connectivityError.hidden = false;
     connectivityRetry.hidden = false;
-    connectivityState.textContent = `${origin.name}: walking results unavailable. No other origin's results displayed.`;
+    connectivityState.textContent = `${origin.name}: ${travelMode} results unavailable. No other origin or mode's results displayed.`;
   }
 }
 
@@ -120,9 +158,21 @@ function connectivityPopup(label, detail) {
   return node;
 }
 
+function updateConnectivityPanBounds() {
+  if (!connectivityBounds || document.body.dataset.mode !== "connectivity") return;
+  let bounds = connectivityBounds;
+  if (connectivityTravelMode === "biking" && connectivityData) {
+    bounds = L.latLngBounds(connectivityBounds.getSouthWest(), connectivityBounds.getNorthEast());
+    for (const feature of connectivityData.edges.features) {
+      for (const [lon, lat] of feature.geometry.coordinates) bounds.extend([lat, lon]);
+    }
+  }
+  map.setMaxBounds(bounds.pad(1.2));
+}
+
 function fitConnectivityMap() {
   map.setMinZoom(11);
-  map.setMaxBounds(connectivityBounds.pad(1.2));
+  updateConnectivityPanBounds();
   map.invalidateSize();
   map.fitBounds(connectivityBounds, { padding: [24, 24], animate: false });
 }
@@ -179,7 +229,7 @@ function renderConnectivity() {
   document.querySelector(".connectivity-legend").hidden = !connectivityData;
   if (!connectivityData) {
     document.getElementById("connectivity-metrics").replaceChildren();
-    document.getElementById("connectivity-summary").textContent = "No walking results displayed while this origin loads.";
+    document.getElementById("connectivity-summary").textContent = "No reachability results displayed while this origin and mode load.";
     document.getElementById("connectivity-provenance").textContent = "";
     return;
   }
@@ -205,7 +255,7 @@ function renderConnectivity() {
     onEachFeature(f, layer) {
       const bridge = connectivityData.bridges.find((b) => b.id === f.properties.bridge);
       layer.bindPopup(connectivityPopup(bridge ? bridge.label : f.properties.street,
-        `${f.properties.kind.replace("_", " ")}: ${f.properties.length_ft.toFixed(0)} ft / ${f.properties.minutes.toFixed(2)} min`));
+        `${f.properties.kind.replace("_", " ")}: ${f.properties.length_ft.toFixed(0)} ft / ${f.properties.minutes.toFixed(2)} min${f.properties.travel_mode === "dismount" ? " (dismount and walk)" : ""}`));
     },
   }).addTo(connectivityLinks);
   const base = ConnectivityModel.metrics(connectivityData, "baseline", budget);
@@ -225,9 +275,9 @@ function renderConnectivity() {
   const names = connectivityData.bridges.filter((b) => active.includes(b.id)).map((b) => b.label);
   document.getElementById("connectivity-summary").textContent =
     `Baseline → ${names.length ? names.join(" + ") : "no proposed bridges"}, within ${budget} minutes of ${connectivityOrigins.find((origin) => origin.id === connectivityOriginId).name}.`;
-  connectivityState.textContent = `${budget}-minute reachability / ${names.length} of ${connectivityData.bridges.length} bridges on. Precomputed; no live routing.`;
+  connectivityState.textContent = `${connectivityTravelMode === "biking" ? "Biking" : "Walking"}: ${budget}-minute reachability / ${names.length} of ${connectivityData.bridges.length} bridges on. Precomputed; no live routing.`;
   document.getElementById("connectivity-provenance").textContent =
-    `LION ${connectivityData.provenance.lion} / ${connectivityData.provenance.source_edges.toLocaleString("en-US")} source edges; ${connectivityData.settings.walking_speed_mph} mph. ${Object.keys(connectivityData.scenarios).length} precomputed bridge combinations.`;
+    `LION ${connectivityData.provenance.lion} / ${connectivityData.provenance.source_edges.toLocaleString("en-US")} source edges; ${connectivityTravelMode === "biking" ? `${connectivityData.settings.biking.speed_mph} mph cycling / ${connectivityData.settings.walking_speed_mph} mph dismount` : `${connectivityData.settings.walking_speed_mph} mph walking`}. ${Object.keys(connectivityData.scenarios).length} precomputed bridge combinations.`;
 }
 
 function buildBridgeToggles(data) {
@@ -257,14 +307,15 @@ async function loadConnectivity() {
   connectivityError.hidden = true;
   connectivityState.textContent = "Loading verified walking snapshot...";
   try {
-    const response = await fetch("assets/connectivity/walking.json?v=walking-origins-v1", { cache: "no-cache" });
+    const response = await fetch("assets/connectivity/walking.json?v=biking-origins-v1", { cache: "no-cache" });
     if (!response.ok) throw new Error(`Walking snapshot unavailable (${response.status}).`);
     const data = ConnectivityModel.validate(await response.json());
-    const originsResponse = await fetch("assets/connectivity/origins.json?v=walking-origins-v1", { cache: "no-cache" });
+    const originsResponse = await fetch("assets/connectivity/origins.json?v=biking-origins-v1", { cache: "no-cache" });
     if (!originsResponse.ok) throw new Error(`Origin catalog unavailable (${originsResponse.status}).`);
     connectivityOrigins = ConnectivityModel.validateOrigins(await originsResponse.json(), data).origins;
     connectivityData = data;
     connectivitySnapshots.set("main_street", data);
+    for (const button of document.querySelectorAll("[data-connectivity-travel-mode]")) button.disabled = false;
     buildBridgeToggles(data);
     const island = L.geoJSON(data.island, {
       style: { color: mapPalette.island, weight: 1, fillOpacity: 0.02 },
@@ -305,6 +356,7 @@ async function loadConnectivity() {
     connectivityOriginMarkers.addTo(connectivityGroup);
     connectivityOrigins = [];
     connectivitySnapshots.clear();
+    for (const button of document.querySelectorAll("[data-connectivity-travel-mode]")) button.disabled = true;
     document.getElementById("connectivity-origins").replaceChildren();
     document.getElementById("connectivity-origin-note").textContent = "Origin locations unavailable. Retry loading Connectivity.";
     connectivityBridgeList.replaceChildren();
@@ -325,5 +377,8 @@ async function loadConnectivity() {
 }
 
 document.getElementById("connectivity-budget").addEventListener("input", renderConnectivity);
+for (const button of document.querySelectorAll("[data-connectivity-travel-mode]")) {
+  button.addEventListener("click", () => selectConnectivityOrigin(connectivityOriginId, button.dataset.connectivityTravelMode));
+}
 connectivityRetry.addEventListener("click", () => connectivityOrigins.length
   ? selectConnectivityOrigin(connectivityOriginId) : loadConnectivity());
