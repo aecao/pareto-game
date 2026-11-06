@@ -389,13 +389,17 @@ The former Map Style selector has been removed in every mode; the light basemap
 remains. In Connectivity, its place is an eight-button **Origin** selector:
 Main Street (default), Coler, Cornell Tech, Long Island City, Queensbridge Houses,
 Astoria Houses, Ravenswood Houses, and East River Esplanade.
-All eight markers are shown. Selecting an alternate origin hides Main Street's
-isochrones, metrics and origin connector, while retaining proposed bridge geometry.
-Walking controls are disabled until Main Street is selected again; its existing
-budget and bridge choices are preserved. No new isochrones have been generated.
+All eight markers are shown. Every origin now has walking reachability for all
+eight on/off combinations of Broadway-Coler, Queensbridge-Manhattan Park and
+LIC-Midtown. Switching origins preserves the 0-60 minute slider and bridge choices,
+and replaces streets, metrics and access links with that origin's results.
+Snapshots load on demand and are cached. While loading or on failure, stale
+results are cleared; errors expose a retry button. Late responses cannot replace
+the latest selection. The JSON download follows the selected origin.
 
-Alternate locations are provisional, not verified entrances or snapped routing
-nodes. Coler (BIN 1040750) and Cornell Tech (BIN 1089785) use footprint centroids
+Alternate locations remain provisional, not verified entrances. Routing attaches
+each to the nearest ground-level source street on its side of the river via a
+costed assumed straight connector (0-231 ft). Coler (BIN 1040750) and Cornell Tech (BIN 1089785) use footprint centroids
 calculated in EPSG:2263, then transformed to EPSG:4326. Queens markers use the
 user-supplied addresses matched by NYC GeoSearch (fallback, confidence 0.8).
 East River Esplanade uses an East Midtown Greenway vertex near East 54th Street.
@@ -406,12 +410,27 @@ The source definitions live in the companion POSTGIS `config.yaml`, under
 refresh `assets/connectivity/origins.json`. This exports only markers and checks
 that Main Street agrees exactly with the existing walking snapshot.
 
+The seven alternate snapshots were calculated on 2026-11-06: 56 scenarios and
+224 checks at 15/30/45/60 minutes. Main Street's original snapshot is unchanged.
+Each result was independently recomputed from its saved graph, including exact
+node times, partial-edge lengths, source bridge geometry, the 3-minute island
+exit penalty, and the rule that adding bridges cannot worsen travel times.
+From East River Esplanade, Broadway-Coler alone does not affect reach within
+60 minutes; not all its deck nodes are reached. A bridge beyond the time horizon
+can legitimately have no effect.
+Regenerate using the companion POSTGIS
+[build_connectivity_origins.py](../../POSTGIS/01_sites/build_connectivity_origins.py)
+with `--web-root` pointing to this checkout. It refuses to overwrite existing
+outputs. Each [alternate walking JSON](assets/connectivity/) is 2.2-4.4 MB;
+only the selected origin is fetched.
+
 Travel-mode buttons above the bridge toggles show **Walking** selected and
 **Biking** disabled (isochrones not available yet). No biking routing is generated.
 The map always compares baseline reach with the selected bridges; there is no
 map-comparison dropdown. Baseline remains drawn in front of selected-bridge reach.
 
-Select **Connectivity** for the first walking-only bridge prototype:
+**Historical first walking-only bridge prototype (superseded by the current
+three-bridge/eight-origin controls above):**
 `Q00313_4003130001` (two-lot Queens assemblage at Costco Esplanade) from an
 assumed access point on Roosevelt Island. Explore and Siting remain unchanged
 and available.

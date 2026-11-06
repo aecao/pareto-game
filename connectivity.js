@@ -19,6 +19,12 @@ let connectivityBounds = null;
 let connectivityOrigins = [];
 let connectivityOriginId = "main_street";
 let connectivityOriginRenderer = null;
+const connectivitySnapshots = new Map();
+let connectivityOriginRequest = 0;
+
+function walkingSnapshotUrl(id) {
+  return `assets/connectivity/${id === "main_street" ? "walking" : `walking_${id}`}.json?v=walking-origins-v1`;
+}
 
 function renderOriginMarkers() {
   connectivityOriginMarkers.clearLayers();
@@ -46,21 +52,47 @@ function renderOriginMarkers() {
   }
 }
 
-function selectConnectivityOrigin(id) {
+async function selectConnectivityOrigin(id) {
   const origin = connectivityOrigins.find((item) => item.id === id);
   if (!origin) throw new Error(`Unknown Connectivity origin: ${id}`);
   connectivityOriginId = id;
+  const request = ++connectivityOriginRequest;
+  connectivityData = connectivitySnapshots.get(id) ?? null;
+  connectivityError.hidden = true;
+  connectivityRetry.hidden = true;
   for (const button of document.querySelectorAll("#connectivity-origins button")) {
     const active = button.dataset.origin === id;
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-pressed", String(active));
   }
-  document.getElementById("connectivity-origin-note").textContent = id === "main_street"
-    ? "Main Street: current validated walking origin."
-    : `${origin.name}: provisional location only. Isochrone not generated; access and street connections not validated.`;
+  document.getElementById("connectivity-origin-note").textContent =
+    `${origin.name}: ${origin.provisional ? "provisional location; nearest-street access is assumed, not verified." : "current validated walking origin."}`;
   renderOriginMarkers();
   renderConnectivity();
   map.panTo([origin.coordinates[1], origin.coordinates[0]]);
+  const download = document.getElementById("connectivity-download");
+  download.href = walkingSnapshotUrl(id);
+  download.hidden = !connectivityData;
+  if (connectivityData) return;
+  connectivityState.textContent = `Loading walking results for ${origin.name}...`;
+  try {
+    const response = await fetch(walkingSnapshotUrl(id), { cache: "no-cache" });
+    if (!response.ok) throw new Error(`Walking snapshot unavailable (${response.status}).`);
+    const data = ConnectivityModel.validate(await response.json(), origin);
+    connectivitySnapshots.set(id, data);
+    if (request !== connectivityOriginRequest) return;
+    connectivityData = data;
+    download.hidden = false;
+    renderConnectivity();
+    if (document.body.dataset.mode === "connectivity") connectivityGroup.addTo(map);
+  } catch (error) {
+    console.error(`Connectivity origin load failed (${id})`, error);
+    if (request !== connectivityOriginRequest) return;
+    connectivityError.textContent = `Could not load ${origin.name}: ${error.message}`;
+    connectivityError.hidden = false;
+    connectivityRetry.hidden = false;
+    connectivityState.textContent = `${origin.name}: walking results unavailable. No other origin's results displayed.`;
+  }
 }
 
 function buildOriginButtons() {
@@ -141,24 +173,28 @@ function renderLegendRamps(budget) {
 }
 
 function renderConnectivity() {
-  if (!connectivityData) return;
+  connectivityStreets.clearLayers();
+  connectivityLinks.clearLayers();
+  connectivityFields.disabled = !connectivityData;
+  document.querySelector(".connectivity-legend").hidden = !connectivityData;
+  if (!connectivityData) {
+    document.getElementById("connectivity-metrics").replaceChildren();
+    document.getElementById("connectivity-summary").textContent = "No walking results displayed while this origin loads.";
+    document.getElementById("connectivity-provenance").textContent = "";
+    return;
+  }
   const budget = Number(document.getElementById("connectivity-budget").value);
   document.getElementById("connectivity-budget-value").textContent = `${budget} min`;
   const active = selectedBridges();
   const scenario = ConnectivityModel.scenarioName(connectivityData, active);
-  const routed = connectivityOriginId === "main_street";
-  connectivityFields.disabled = !routed;
-  document.querySelector(".connectivity-legend").hidden = !routed;
-  connectivityStreets.clearLayers();
   // Baseline is drawn last so it sits in front of the selected-bridge reach.
-  if (routed && scenario !== "baseline") {
+  if (scenario !== "baseline") {
     drawReachable(scenario, budget, CONNECTIVITY_RAMPS.selected, "Reachable with selected bridges");
   }
-  if (routed) drawReachable("baseline", budget, CONNECTIVITY_RAMPS.baseline, "Baseline");
+  drawReachable("baseline", budget, CONNECTIVITY_RAMPS.baseline, "Baseline");
   renderLegendRamps(budget);
   connectivityLinks.clearLayers();
   L.geoJSON(connectivityData.links, {
-    filter: (f) => routed || f.properties.kind !== "origin_access",
     style: (f) => {
       const on = f.properties.bridge === null || active.includes(f.properties.bridge);
       return {
@@ -172,14 +208,6 @@ function renderConnectivity() {
         `${f.properties.kind.replace("_", " ")}: ${f.properties.length_ft.toFixed(0)} ft / ${f.properties.minutes.toFixed(2)} min`));
     },
   }).addTo(connectivityLinks);
-  if (!routed) {
-    const origin = connectivityOrigins.find((item) => item.id === connectivityOriginId);
-    document.getElementById("connectivity-metrics").replaceChildren();
-    document.getElementById("connectivity-summary").textContent =
-      `${origin.name}: origin marker preview only. No reachability results generated.`;
-    connectivityState.textContent = "Alternate origin selected. Isochrone not generated.";
-    return;
-  }
   const base = ConnectivityModel.metrics(connectivityData, "baseline", budget);
   const chosen = ConnectivityModel.metrics(connectivityData, scenario, budget);
   const metrics = document.getElementById("connectivity-metrics");
@@ -196,8 +224,10 @@ function renderConnectivity() {
   }
   const names = connectivityData.bridges.filter((b) => active.includes(b.id)).map((b) => b.label);
   document.getElementById("connectivity-summary").textContent =
-    `Baseline → ${names.length ? names.join(" + ") : "no proposed bridges"}, within ${budget} minutes of the island centre.`;
+    `Baseline → ${names.length ? names.join(" + ") : "no proposed bridges"}, within ${budget} minutes of ${connectivityOrigins.find((origin) => origin.id === connectivityOriginId).name}.`;
   connectivityState.textContent = `${budget}-minute reachability / ${names.length} of ${connectivityData.bridges.length} bridges on. Precomputed; no live routing.`;
+  document.getElementById("connectivity-provenance").textContent =
+    `LION ${connectivityData.provenance.lion} / ${connectivityData.provenance.source_edges.toLocaleString("en-US")} source edges; ${connectivityData.settings.walking_speed_mph} mph. ${Object.keys(connectivityData.scenarios).length} precomputed bridge combinations.`;
 }
 
 function buildBridgeToggles(data) {
@@ -216,19 +246,25 @@ function buildBridgeToggles(data) {
 }
 
 async function loadConnectivity() {
+  if (connectivityOrigins.length) {
+    connectivityGroup.addTo(map);
+    fitConnectivityMap();
+    return;
+  }
   if (connectivityLoading || connectivityData) return;
   connectivityLoading = true;
   connectivityRetry.hidden = true;
   connectivityError.hidden = true;
   connectivityState.textContent = "Loading verified walking snapshot...";
   try {
-    const response = await fetch("assets/connectivity/walking.json?v=three-bridges-v9", { cache: "no-cache" });
+    const response = await fetch("assets/connectivity/walking.json?v=walking-origins-v1", { cache: "no-cache" });
     if (!response.ok) throw new Error(`Walking snapshot unavailable (${response.status}).`);
     const data = ConnectivityModel.validate(await response.json());
-    const originsResponse = await fetch("assets/connectivity/origins.json?v=three-bridges-v9", { cache: "no-cache" });
+    const originsResponse = await fetch("assets/connectivity/origins.json?v=walking-origins-v1", { cache: "no-cache" });
     if (!originsResponse.ok) throw new Error(`Origin catalog unavailable (${originsResponse.status}).`);
     connectivityOrigins = ConnectivityModel.validateOrigins(await originsResponse.json(), data).origins;
     connectivityData = data;
+    connectivitySnapshots.set("main_street", data);
     buildBridgeToggles(data);
     const island = L.geoJSON(data.island, {
       style: { color: mapPalette.island, weight: 1, fillOpacity: 0.02 },
@@ -268,6 +304,7 @@ async function loadConnectivity() {
     connectivityLinks.addTo(connectivityGroup);
     connectivityOriginMarkers.addTo(connectivityGroup);
     connectivityOrigins = [];
+    connectivitySnapshots.clear();
     document.getElementById("connectivity-origins").replaceChildren();
     document.getElementById("connectivity-origin-note").textContent = "Origin locations unavailable. Retry loading Connectivity.";
     connectivityBridgeList.replaceChildren();
@@ -288,4 +325,5 @@ async function loadConnectivity() {
 }
 
 document.getElementById("connectivity-budget").addEventListener("input", renderConnectivity);
-connectivityRetry.addEventListener("click", loadConnectivity);
+connectivityRetry.addEventListener("click", () => connectivityOrigins.length
+  ? selectConnectivityOrigin(connectivityOriginId) : loadConnectivity());

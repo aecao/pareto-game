@@ -5,6 +5,9 @@ const data = require("../assets/connectivity/walking.json");
 const fs = require("node:fs");
 const path = require("node:path");
 const origins = require("../assets/connectivity/origins.json");
+const alternateSnapshots = new Map(origins.origins.slice(1).map((origin) => [
+  origin.id, require(`../assets/connectivity/walking_${origin.id}.json`),
+]));
 
 test("origin catalog has eight sourced locations and preserves the exact Main Street origin", () => {
   assert.equal(model.validateOrigins(origins, data), origins);
@@ -42,7 +45,7 @@ test("origin controls replace map style and load the same released origin catalo
   assert.ok(renderer.includes(`fetch("assets/connectivity/origins.json?v=${version}"`));
 });
 
-test("alternate origins clear results and Main Street restores the selected scenario", () => {
+function rendererHarness(fetch) {
   const vm = require("node:vm");
   const element = () => ({
     children: [], value: "45", hidden: false, textContent: "",
@@ -61,42 +64,124 @@ test("alternate origins clear results and Main Street restores the selected scen
   });
   const context = vm.createContext({
     ConnectivityModel: model,
-    document: { getElementById: get, querySelector: get, createElement: element },
+    console, fetch,
+    map: { panTo() {} },
+    document: {
+      body: { dataset: { mode: "connectivity" } },
+      getElementById: get, querySelector: get, querySelectorAll: () => [], createElement: element,
+    },
     L: {
       featureGroup: group,
       geoJSON(collection, options) {
-        return { addTo(target) { target.layers = collection.features.filter(options.filter); } };
+        return { addTo(target) { target.layers = collection.features.filter(options?.filter ?? (() => true)); } };
       },
     },
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, "../connectivity.js"), "utf8"), context);
   context.testData = data;
   context.testOrigins = origins.origins;
+  context.testSnapshots = alternateSnapshots;
   vm.runInContext(`
     connectivityData = testData; connectivityOrigins = testOrigins;
+    connectivitySnapshots.set("main_street", testData);
     renderLegendRamps = () => {};
+    renderOriginMarkers = () => {};
     drawReachable = (scenario) => connectivityStreets.layers.push(scenario);
     renderConnectivity();
   `, context);
+  return { context, get, run: (code) => vm.runInContext(code, context) };
+}
+
+test("all routed origins preserve controls and Main Street restores its original results", async () => {
+  const { context, get, run } = rendererHarness(() => { throw new Error("Cached origin fetched."); });
+  run("for (const [id, data] of testSnapshots) connectivitySnapshots.set(id, data);");
   const initialMetrics = JSON.stringify(get("connectivity-metrics").children);
   for (const origin of origins.origins.slice(1)) {
     context.testId = origin.id;
-    vm.runInContext("connectivityOriginId = testId; renderConnectivity();", context);
-    assert.equal(vm.runInContext("connectivityStreets.layers.length", context), 0);
-    assert.equal(get("connectivity-metrics").children.length, 0);
-    assert.ok(get("connectivity-fields").disabled);
-    assert.ok(get(".connectivity-legend").hidden);
-    assert.match(get("connectivity-state").textContent, /not generated/);
-    assert.equal(vm.runInContext('connectivityLinks.layers.some(f => f.properties.kind === "origin_access")', context), false);
-    assert.ok(vm.runInContext("connectivityLinks.layers.length", context) > 0);
+    await run("selectConnectivityOrigin(testId)");
+    assert.equal(run("connectivityStreets.layers.length"), 2);
+    assert.equal(get("connectivity-metrics").children.length, 8);
+    assert.equal(get("connectivity-fields").disabled, false);
+    assert.equal(get(".connectivity-legend").hidden, false);
+    assert.match(get("connectivity-summary").textContent, new RegExp(origin.name));
+    assert.ok(get("connectivity-download").href.includes(`walking_${origin.id}.json`));
+    assert.equal(get("connectivity-budget").value, "45");
+    assert.ok(run("connectivityLinks.layers.length") > 0);
   }
-  vm.runInContext('connectivityOriginId = "main_street"; renderConnectivity();', context);
+  await run('selectConnectivityOrigin("main_street")');
   assert.equal(get("connectivity-fields").disabled, false);
   assert.equal(get(".connectivity-legend").hidden, false);
-  assert.equal(vm.runInContext("connectivityStreets.layers.length", context), 2);
+  assert.equal(run("connectivityStreets.layers.length"), 2);
   assert.equal(JSON.stringify(get("connectivity-metrics").children), initialMetrics);
 });
 
+test("late origin responses cannot replace the latest selection", async () => {
+  const pending = new Map();
+  const { get, run } = rendererHarness((url) => new Promise((resolve) => pending.set(url, resolve)));
+  const coler = run('selectConnectivityOrigin("coler")');
+  assert.equal(run("connectivityData"), null);
+  assert.equal(run("connectivityStreets.layers.length"), 0);
+  assert.ok(get("connectivity-fields").disabled);
+  const cornell = run('selectConnectivityOrigin("cornell_tech")');
+  const finish = (id) => {
+    const url = [...pending.keys()].find((url) => url.includes(`walking_${id}.json`));
+    pending.get(url)({ ok: true, json: async () => alternateSnapshots.get(id) });
+  };
+  finish("cornell_tech");
+  await cornell;
+  finish("coler");
+  await coler;
+  assert.equal(run("connectivityData.settings.selected_origin.id"), "cornell_tech");
+  assert.match(get("connectivity-summary").textContent, /Cornell Tech/);
+  assert.equal(get("connectivity-fields").disabled, false);
+});
+
+test("failed origin loads clear stale results and can be retried", async () => {
+  let failed = true;
+  const { get, run } = rendererHarness(async () => failed
+    ? { ok: false, status: 503 } : { ok: true, json: async () => alternateSnapshots.get("coler") });
+  await run('selectConnectivityOrigin("coler")');
+  assert.equal(run("connectivityData"), null);
+  assert.equal(run("connectivityStreets.layers.length"), 0);
+  assert.equal(get("connectivity-metrics").children.length, 0);
+  assert.equal(get("connectivity-error").hidden, false);
+  assert.equal(get("connectivity-retry").hidden, false);
+  assert.equal(get("connectivity-download").hidden, true);
+  failed = false;
+  await run('selectConnectivityOrigin("coler")');
+  assert.equal(get("connectivity-error").hidden, true);
+  assert.equal(get("connectivity-fields").disabled, false);
+});
+
+for (const origin of origins.origins.slice(1)) {
+  test(`${origin.name}: validated snapshot reconciles all scenario summaries and bands`, () => {
+    const snapshot = alternateSnapshots.get(origin.id);
+    assert.equal(model.validate(snapshot, origin), snapshot);
+    assert.equal(Object.keys(snapshot.scenarios).length, 8);
+    assert.equal(snapshot.summary.length, 32);
+    for (const row of snapshot.summary) {
+      const metrics = model.metrics(snapshot, row.scenario, row.budget_minutes);
+      assert.equal(metrics.queens, row.queens_source_nodes);
+      assert.equal(metrics.island, row.island_source_nodes);
+      assert.equal(metrics.other, row.other_source_nodes);
+      assert.ok(Math.abs(metrics.existingMiles - row.existing_source_edge_miles) < 1e-8);
+    }
+    for (const budget of [0, 7, 33, 60]) {
+      const scenario = Object.keys(snapshot.scenarios).at(-1);
+      const times = snapshot.node_times[scenario];
+      for (const feature of snapshot.edges.features) {
+        const feet = model.bands(feature, times, budget, 5)
+          .reduce((sum, part) => sum + (part.to - part.from) * feature.properties.l, 0);
+        assert.ok(Math.abs(feet - model.trim(feature, times, budget).fraction * feature.properties.l) < 1e-6);
+      }
+    }
+    assert.throws(() => model.validate(snapshot, origins.origins.find((o) => o.id !== origin.id && o.id !== "main_street")),
+      /origin identity/);
+    const invalid = structuredClone(snapshot);
+    invalid.markers.features.find((f) => f.properties.role === "origin").geometry.coordinates[0] += 0.001;
+    assert.throws(() => model.validate(invalid, origin), /origin marker/);
+  });
+}
 test("Connectivity scripts, fetch and download share a cache-busting release", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const loader = fs.readFileSync(path.join(__dirname, "../connectivity.js"), "utf8");

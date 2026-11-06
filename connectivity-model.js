@@ -36,10 +36,17 @@
     requireValue(ids.length === new Set(selected).size, "unknown bridge selection");
     return ids.length ? ids.join("+") : "baseline";
   }
-  function validate(data) {
-    requireValue(data && data.schema_version === 5, "unsupported schema");
-    requireValue(data.settings?.origin_method === "roosevelt_island_centroid_with_nearest_street_connector",
-      "unexpected origin method");
+  function validate(data, origin = null) {
+    const alternate = origin !== null;
+    requireValue(data && data.schema_version === (alternate ? 6 : 5), "unsupported schema");
+    requireValue(data.settings?.origin_method === (alternate ? "configured_point_with_nearest_street_connector"
+      : "roosevelt_island_centroid_with_nearest_street_connector"), "unexpected origin method");
+    if (alternate) {
+      const saved = data.settings.selected_origin;
+      requireValue(origin.id !== "main_street" && saved?.id === origin.id && saved.name === origin.name
+        && saved.source === origin.source && saved.provisional === origin.provisional
+        && JSON.stringify(saved.coordinates) === JSON.stringify(origin.coordinates), "origin identity");
+    }
     requireValue(JSON.stringify(data.settings.thresholds_minutes) === JSON.stringify(BUDGETS), "unexpected budgets");
     requireValue(data.settings.walking_speed_mph === 3, "unexpected speed");
     requireValue(data.provenance?.geometry_crs === "EPSG:4326" && data.provenance.lion === "26c", "missing provenance");
@@ -60,8 +67,10 @@
         && scenarioName(data, data.scenarios[name]) === name), "scenario set");
     requireValue(data.validation?.adding_bridges_never_worsens_times === true
       && data.validation.existing_island_bridge_in_baseline === true
-      && data.validation.origin_is_roosevelt_island_centroid === true
-      && data.validation.every_bridge_deck_reachable === true, "unverified scenarios");
+      && (alternate ? data.validation.origin_matches_configured_point === true
+        && data.validation.origin_is_roosevelt_island_centroid === false
+        : data.validation.origin_is_roosevelt_island_centroid === true
+        && data.validation.every_bridge_deck_reachable === true), "unverified scenarios");
     requireValue(!("example_routes" in data) && !("reachable_streets" in data), "obsolete fields are not supported");
     for (const name of ["edges", "links", "markers", "island"]) checkCollection(name, data[name]);
     const nodeCount = data.node_flags?.length;
@@ -94,7 +103,7 @@
       summaryKeys.add(`${row.scenario}:${row.budget_minutes}`);
     }
     requireValue(summaryKeys.size === data.summary.length, "duplicate summary rows");
-    for (const id of ids) {
+    for (const id of alternate ? [] : ids) {
       requireValue(BUDGETS.some((budget) => {
         const a = summaryRow(data, "baseline", budget);
         const b = summaryRow(data, id, budget);
@@ -103,6 +112,12 @@
       }), `bridge ${id} has no effect`);
     }
     requireValue(data.markers.features.some((f) => f.properties.role === "origin"), "origin marker");
+    if (alternate) {
+      const markers = data.markers.features.filter((f) => f.properties.role === "origin");
+      requireValue(markers.length === 1 && markers[0].geometry.type === "Point"
+        && markers[0].geometry.coordinates.every((value, i) => Math.abs(value - origin.coordinates[i]) < 1e-7),
+      "origin marker differs from configured point");
+    }
     return data;
   }
   function summaryRow(data, scenario, budget) {
