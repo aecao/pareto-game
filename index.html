@@ -167,10 +167,14 @@
         <section class="transit2-only transit2-parameters" hidden aria-labelledby="transit2-heading">
           <span class="eyebrow">SCREENING MODEL / AM PEAK</span>
           <h1 id="transit2-heading">Transit 2</h1>
-          <p class="section-note">Adjust the screening assumptions. Results estimate additional households supported by off-island AM peak transit capacity.</p>
+          <p class="section-note">Adjust screening assumptions. Subway and bus headways affect AM-peak capacity only; whole-weekday capacity continues to use scheduled trip totals. Results compare modeled commuter spaces with ACS-estimated demand, then show household and resident capacity for the Roosevelt Island proxy. ACS demand is not observed ridership.</p>
           <fieldset id="transit2-fields" disabled>
             <label for="transit2-arrival-load">Subway arrival load: <output id="transit2-arrival-load-value">70%</output></label>
             <input id="transit2-arrival-load" type="range" min="0.5" max="0.85" step="0.05" value="0.7">
+            <label for="transit2-subway-headway">Subway AM-peak headway: <output id="transit2-subway-headway-value">7.5 min</output></label>
+            <input id="transit2-subway-headway" type="range" min="5" max="15" step="0.5" value="7.5">
+            <label for="transit2-bus-headway">Bus AM-peak headway: <output id="transit2-bus-headway-value">15 min</output></label>
+            <input id="transit2-bus-headway" type="range" min="5" max="30" step="1" value="15">
             <label for="transit2-peak-share">Daily trips in peak hour: <output id="transit2-peak-share-value">30%</output></label>
             <input id="transit2-peak-share" type="range" min="0.1" max="0.6" step="0.05" value="0.3">
             <label for="transit2-in-person">In-person work share: <output id="transit2-in-person-value">75%</output></label>
@@ -179,6 +183,7 @@
             <input id="transit2-tram-headway" type="range" min="5" max="20" step="0.5" value="7.5">
             <label for="transit2-ferry-headway">Ferry headway: <output id="transit2-ferry-headway-value">25 min</output></label>
             <input id="transit2-ferry-headway" type="range" min="10" max="60" step="1" value="25">
+            <button id="transit2-reset" type="button" class="secondary-button">Reset to original values</button>
           </fieldset>
           <p id="transit2-state" role="status" aria-live="polite">Select Transit 2 to load the model.</p>
           <p id="transit2-error" class="siting-error" role="alert" hidden></p>
@@ -432,11 +437,11 @@
             </table>
           </div>
           <section class="transit-commute" aria-labelledby="transit-commute-heading">
-              <h3 id="transit-commute-heading">Resident commute modes originating on Roosevelt Island</h3>
+              <h3 id="transit-commute-heading">Resident commute modes for the Roosevelt Island proxy</h3>
               <p id="transit-commute-summary" class="section-note"></p>
               <div class="transit-table-scroll" tabindex="0" role="region" aria-label="Roosevelt Island resident commute modes">
                 <table class="ranking-table transit-table transit-commute-table">
-                  <caption>2020–2024 ACS B08301 estimates summed for the two-tract Roosevelt Island proxy. Approximate 90% margins of error are shown; categories are not route-specific.</caption>
+                  <caption>2020–2024 ACS B08301 estimates summed for the three-tract Roosevelt Island proxy. Approximate 90% margins of error are shown; categories are not route-specific or observed ridership.</caption>
                   <thead><tr><th scope="col">Commute mode</th><th scope="col">Estimated workers</th><th scope="col">Share</th><th scope="col">Approx. +/- MOE</th></tr></thead>
                   <tbody id="transit-commute-values"></tbody>
                 </table>
@@ -454,25 +459,57 @@
         </div>
       </section>
       <section class="transit2-only transit2-results" hidden aria-labelledby="transit2-results-heading">
-        <span class="eyebrow">MODEL OUTPUT / HOUSEHOLD CAPACITY</span>
+        <span class="eyebrow">MODEL OUTPUT / TRANSIT CAPACITY</span>
         <h2 id="transit2-results-heading">Transit-constrained residential capacity</h2>
         <p id="transit2-intro" class="transit-intro"></p>
         <p class="siting-warning">Illustrative engineering headroom, not a housing entitlement or forecast. The model excludes pedestrian/internal circulation, Motorgate, emergency egress, utilities, schools and open space. At high figures, external network constraints may bind first.</p>
         <div id="transit2-content" hidden>
+          <p id="transit2-takeaway" class="transit2-takeaway"></p>
+          <section class="transit2-visual-block" aria-labelledby="transit2-commuter-capacity-heading">
+            <h3 id="transit2-commuter-capacity-heading">AM-peak commuter spaces</h3>
+            <p class="section-note">Blue track = modeled usable passenger places per hour; rust fill = ACS-estimated commute demand. ACS usual mode is not observed ridership or directional/hourly counts. Tram's full-load comparison is a user-reported crowding scenario, not an observed peak count; the separate daily estimate has no AM-peak or direction split.</p>
+            <div id="transit2-total-capacity" class="transit2-comparisons"></div>
+            <div id="transit2-mode-capacity" class="transit2-comparisons transit2-mode-comparisons"></div>
+            <p id="transit2-tramway-demand-note" class="section-note"></p>
+            <a id="transit2-tramway-demand-source" target="_blank" rel="noopener noreferrer">Source: August 2026 Tramway ridership estimate</a>
+          </section>
+          <section class="transit2-visual-block" aria-labelledby="transit2-household-capacity-heading">
+            <h3 id="transit2-household-capacity-heading">Household capacity</h3>
+            <p id="transit2-household-note" class="section-note"></p>
+            <div id="transit2-household-capacity" class="transit2-comparisons"></div>
+          </section>
+          <section class="transit2-visual-block" aria-labelledby="transit2-resident-capacity-heading">
+            <h3 id="transit2-resident-capacity-heading">Resident capacity</h3>
+            <p class="section-note">Additional households are converted using the 2020-2024 ACS average household size; current population includes group-quarters residents. The capacity projection is not a forecast.</p>
+            <div id="transit2-resident-capacity" class="transit2-comparisons"></div>
+          </section>
           <section class="transit2-summary" aria-labelledby="transit2-summary-heading">
-            <h3 id="transit2-summary-heading">Mode headroom at selected arrival load</h3>
+            <h3 id="transit2-summary-heading">Mode headroom and bottlenecks</h3>
             <div id="transit2-headroom" class="transit2-cards"></div>
           </section>
-          <section class="transit2-scenarios" aria-labelledby="transit2-scenarios-heading">
-            <h3 id="transit2-scenarios-heading">Subway arrival-load scenarios</h3>
-            <div class="transit-table-scroll" tabindex="0" role="region" aria-label="Transit 2 subway scenarios">
-              <table class="ranking-table transit-table">
-                <caption>Fixed mode split uses the binding mode. Full reallocation sums all mode headroom. Values are rounded for display.</caption>
-                <thead><tr><th scope="col">Arrival load</th><th scope="col">Subway headroom</th><th scope="col">Subway-only households</th><th scope="col">Fixed split households</th><th scope="col">Binding mode</th><th scope="col">Full reallocation households</th></tr></thead>
-                <tbody id="transit2-scenarios"></tbody>
-              </table>
-            </div>
-          </section>
+          <details class="transit2-details">
+            <summary>Detailed commuter and residential capacity ranges</summary>
+            <section class="transit2-aggregate" aria-labelledby="transit2-aggregate-heading">
+              <h3 id="transit2-aggregate-heading">Summed commuter and residential capacity</h3>
+              <div class="transit-table-scroll" tabindex="0" role="region" aria-label="Summed capacity ranges">
+                <table class="ranking-table transit-table">
+                  <caption>Ranges span the 50%, 70% and 85% subway arrival-load scenarios. The AM full-reallocation estimate includes the Tram full-load scenario; the daily estimate remains excluded because the August figure is a calendar-day average without a weekday split. Weekday totals sum scheduled one-way Roosevelt Island departures on October 21, 2026; the subway load scenario applies to M and overnight F trains. The daily residential calculation assumes one outbound work commute per in-person transit worker. Peak-hour sliders do not change the full-day schedule.</caption>
+                  <thead><tr><th scope="col">Period</th><th scope="col">Usable commuter places (one-way)</th><th scope="col">Total households, fixed split</th><th scope="col">Total households, full reallocation</th><th scope="col">Total residents, fixed split</th><th scope="col">Total residents, full reallocation</th></tr></thead>
+                  <tbody id="transit2-aggregate-ranges"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="transit2-scenarios" aria-labelledby="transit2-scenarios-heading">
+              <h3 id="transit2-scenarios-heading">Subway arrival-load scenarios</h3>
+              <div class="transit-table-scroll" tabindex="0" role="region" aria-label="Transit 2 subway scenarios">
+                <table class="ranking-table transit-table">
+                  <caption>Fixed mode split uses the binding ACS mode. AM full reallocation sums mode headroom, including the Tram full-load scenario, and is an optimistic upper bound. Values are rounded for display.</caption>
+                  <thead><tr><th scope="col">Arrival load</th><th scope="col">Subway headroom</th><th scope="col">Subway-only additional households</th><th scope="col">Fixed split additional households</th><th scope="col">Binding mode</th><th scope="col">Full reallocation additional households</th><th scope="col">Additional residents, fixed split</th><th scope="col">Additional residents, full reallocation</th></tr></thead>
+                  <tbody id="transit2-scenarios"></tbody>
+                </table>
+              </div>
+            </section>
+          </details>
           <p id="transit2-provenance" class="section-note"></p>
         </div>
       </section>

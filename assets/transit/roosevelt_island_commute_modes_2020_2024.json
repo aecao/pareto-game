@@ -2,31 +2,32 @@
   "status": "ACS estimated resident workers by reported means of transportation to work; not observed trips or transit capacity.",
   "dataset": "B08301",
   "period": "2020-2024",
-  "geography": "Roosevelt Island proxy: Manhattan Census Tracts 238.02 and 238.03",
+  "geography": "Roosevelt Island proxy: Manhattan Census Tracts 238.02, 238.03 and 238.04",
   "universe": "Workers age 16 years and over",
   "source_asset": "assets/income/transport-tracts.json",
   "source_geographies": [
     {"geoid": "36061023802", "name": "Manhattan: Census Tract 238.02", "pie_total": 1906},
-    {"geoid": "36061023803", "name": "Manhattan: Census Tract 238.03", "pie_total": 1801}
+    {"geoid": "36061023803", "name": "Manhattan: Census Tract 238.03", "pie_total": 1801},
+    {"geoid": "36061023804", "name": "Manhattan: Census Tract 238.04", "pie_total": 1989}
   ],
-  "aggregation": "Estimates are summed. Approximate margins of error use root-sum-of-squares across the two tract MOEs and round up.",
-  "total": 3707,
-  "total_moe": 509,
+  "aggregation": "Estimates are summed. Approximate margins of error use root-sum-of-squares across the three tract MOEs and round up.",
+  "total": 5696,
+  "total_moe": 680,
   "modes": [
-    {"label": "Car / truck / van / taxi", "estimate": 434, "moe": 213},
-    {"label": "Bus", "estimate": 137, "moe": 101},
-    {"label": "Subway", "estimate": 1881, "moe": 357},
-    {"label": "Rail", "estimate": 26, "moe": 58},
-    {"label": "Ferry", "estimate": 74, "moe": 69},
-    {"label": "Motorcycle", "estimate": 0, "moe": 38},
-    {"label": "Bicycle", "estimate": 38, "moe": 48},
-    {"label": "Walked", "estimate": 154, "moe": 97},
-    {"label": "Other", "estimate": 135, "moe": 201},
-    {"label": "Worked from home", "estimate": 828, "moe": 237}
+    {"label": "Car / truck / van / taxi", "estimate": 527, "moe": 242},
+    {"label": "Bus", "estimate": 165, "moe": 110},
+    {"label": "Subway", "estimate": 3060, "moe": 496},
+    {"label": "Rail", "estimate": 26, "moe": 71},
+    {"label": "Ferry", "estimate": 119, "moe": 102},
+    {"label": "Motorcycle", "estimate": 0, "moe": 47},
+    {"label": "Bicycle", "estimate": 57, "moe": 60},
+    {"label": "Walked", "estimate": 257, "moe": 111},
+    {"label": "Other", "estimate": 220, "moe": 213},
+    {"label": "Worked from home", "estimate": 1265, "moe": 337}
   ],
   "limitations": [
     "This is a resident-based ACS commute-mode estimate, not a directional origin-destination count.",
-    "The tract pair is a documented Roosevelt Island geography proxy; it should be reviewed against the current island boundary before use for demand modeling.",
+    "The three-tract geography is a Roosevelt Island proxy aligned with the project's custom island population boundary; Census tracts do not exactly follow the island shoreline.",
     "Categories are B08301 published categories and do not identify specific subway lines, bus routes, ferry routes, tram use or bridge crossings.",
     "The estimates are not comparable to the scheduled full-vehicle passenger-place figures elsewhere in Transit."
   ]

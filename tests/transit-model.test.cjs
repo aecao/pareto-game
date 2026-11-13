@@ -13,6 +13,9 @@ test("directional figures and no-direct-service labels match reviewed snapshots"
   const rows = model.rows(data, 150);
   const row = (mode, borough) => rows.find((r) => r.mode === mode && r.borough === borough);
   assert.equal(rows.length, 8);
+  assert.equal(data.commute.total, 5696);
+  assert.equal(data.commute.source_geographies.length, 3);
+  assert.equal(data.commute.modes.find((mode) => mode.label === "Subway").estimate, 3060);
   for (const borough of ["Manhattan", "Queens"]) {
     assert.deepEqual([row("Subway", borough).to, row("Subway", borough).from], [270900, 270900]);
     assert.deepEqual([row("Ferry", borough).to, row("Ferry", borough).from], [5850, 5850]);

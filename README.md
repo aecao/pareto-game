@@ -717,11 +717,11 @@ capacity. Walking, cycling, private vehicles and proposed scenarios are not
 calculated here.
 
 Transit also includes a separate resident commute-mode summary: 2020–2024 ACS
-B08301 estimates summed for Manhattan Census Tracts 238.02 and 238.03, the
-documented Roosevelt Island proxy. It reports 3,707 estimated workers:
-car/truck/van/taxi 434, bus 137, subway 1,881, rail 26, ferry 74, motorcycle
-0, bicycle 38, walked 154, other 135, and worked from home 828. Approximate
-90% margins of error use root-sum-of-squares across the two tract MOEs. This
+B08301 estimates summed for Manhattan Census Tracts 238.02, 238.03 and 238.04,
+the three-tract Roosevelt Island proxy. It reports 5,696 estimated workers:
+car/truck/van/taxi 527, bus 165, subway 3,060, rail 26, ferry 119, motorcycle
+0, bicycle 57, walked 257, other 220, and worked from home 1,265. Approximate
+90% margins of error use root-sum-of-squares across the three tract MOEs. This
 is a resident-based means-of-transportation estimate, not an origin-destination
 flow, route-specific ridership count, or capacity measure, and must not be added
 to the scheduled passenger-place table.
@@ -730,8 +730,11 @@ to the scheduled passenger-place table.
 
 **Transit 2** is a browser-based implementation of the capacity-screening
 model in `roosevelt_island_transit_capacity_spec.md` section 6. Sliders adjust
-subway arrival load, peak-hour share, in-person share, tram headway and ferry
-headway. The mode reports mode headroom and the requested 50%, 70% and 85%
+subway arrival load, subway and bus AM-peak headways, peak-hour share, in-person
+share, tram headway and ferry headway; the reset button restores the values
+loaded from the model configuration. Subway and bus headway slider ranges are
+explicit sensitivity assumptions in that configuration. The mode reports mode
+headroom and the requested 50%, 70% and 85%
 subway arrival-load scenarios using fixed-split and full-reallocation household
 results. All model parameters and provenance are in
 `assets/transit/transit2-config.json`; unresolved Section 7 data needs are
@@ -741,20 +744,23 @@ Previously collected transit-input replacements include the 109-passenger
 historical tram cabin figure, the 7.5-minute rush-hour tram reference, and the
 150-passenger ferry fleet class. Each replacement includes provenance and a
 verification status under `replaced_from_collected_data`; none is treated as fully validated
-for the modeled date. Daily GTFS trip counts were not substituted for peak
-headways or peak arrival loads.
+for the modeled date. Peak-hour headways and loads remain separate from the
+whole-weekday schedule totals below.
 
 The Transit 2 household count, workers per household and in-person work share
-now use 2020-2024 ACS estimates for Manhattan Census Tracts 238.02 and 238.03:
-3,622 households (approximate 90% MOE ±404), 3,707 workers (±509) and 828
-working from home (±237). This is a two-tract Roosevelt Island proxy, not an
-island-boundary count. The Transit 2 split uses ACS B08301 counts for direct
-services: subway 1,881, bus 137, and ferry 74. Shares are normalized across
+use 2020-2024 ACS estimates for Manhattan Census Tracts 238.02, 238.03 and
+238.04: 5,175 households (approximate 90% MOE ±514), 5,696 workers (±680) and
+1,265 working from home (±337). The population baseline is 11,520 residents
+(approximate MOE ±1,071). The Transit 2 split uses ACS B08301 counts for direct
+services: subway 3,060, bus 165, and ferry 119. Shares are normalized across
 those categories, and transit share is conditional on in-person workers to
-avoid applying work-from-home exclusion twice. The 26 ACS rail workers are
+avoid applying work-from-home exclusion twice. Resident capacity converts
+additional households using the household-weighted 2020-2024 ACS B25010
+average household size of 2.087 (approximate MOE ±0.141, with weights held
+fixed); current ACS population includes group quarters. The 26 ACS rail workers are
 excluded from independent Roosevelt Island capacity because no commuter-rail
-service boards on the island. ACS has no Tram category, so Tram has zero
-baseline share in this calculation (not an estimate of zero Tram ridership);
+service boards on the island. ACS does not identify Tram riders separately,
+so its zero baseline share is not an estimate of zero Tram ridership;
 its capacity is available only in the full-reallocation scenario.
 
 The selected October 21, 2026 M-train GTFS hour is 07:00-08:00, with 8
@@ -765,6 +771,36 @@ Observed M-train passenger arrival loads remain unavailable. The same hour has
 per bus, a user-approved generic-bus assumption) and 3 scheduled Astoria-route
 ferry departures, represented as a 20-minute equivalent headway. Ferry gaps
 are irregular, and vessel assignments and loads are unknown.
+
+Transit 2 shows modeled usable AM-peak spaces with ACS-estimated commute demand
+overlaid, split by mode, followed by household and resident capacities. Demand
+is a usual-commute estimate, not observed ridership; Tram demand is not identified by ACS, so its AM-peak net headroom remains
+unknown. A separate provisional Tramway estimate from the
+[August 2026 third-party summary](https://kjihacheol.com/nyc-ridership?station=nyc-ridership-ri-tramway-tram2&lang=en)
+is 137,711 riders, or about 4,442 per calendar day. The
+user identifies this as Tramway data, while the page labels it as an NYC subway
+station; this mode attribution requires official confirmation. The monthly
+average has no weekday, direction or time-of-day split, so it is shown only as
+daily context and is not used in the AM-peak demand overlay or residential
+capacity calculations. Separately, a user-reported crowding scenario assumes
+every scheduled Tram departure in the selected AM peak is full. At the 7.5-minute
+baseline and nominal 109 passengers per Tram, that is about 872 riders/hour,
+compared with 741 places/hour at the model's 85% planning load: 131 above that
+planning level and zero gross spaces remaining. This scenario is explicitly an
+assumption, not observed passenger counts; it reduces AM full-reallocation
+headroom only. The fixed ACS mode split excludes Tram because ACS does not
+identify its riders, and the calendar-day average is not applied to daily
+residential calculations. Fixed mode shares and
+full reallocation are shown side by side, with the latter an optimistic upper
+bound. The detailed commuter/residential ranges are collapsed below the mode
+headroom cards. Ranges span the 50%, 70% and 85% subway arrival-load scenarios.
+Household totals include the 5,175 ACS-estimated existing households plus
+modeled additional capacity. The weekday schedule includes 115 M and 37 F
+departures, 47 Q102 trips, 109 Tram trips and 39 Astoria Ferry sailings from
+Roosevelt Island. The same subway arrival-load scenario is applied to M and
+overnight F trains, since observed nighttime F loads are unavailable. Weekday
+totals are scheduled service, not observed operations; peak-hour headway
+sliders do not change them.
 
 The four JSON files in `assets/transit/` are byte-for-byte copies of the
 corresponding `POSTGIS/data/derived/roosevelt_island_*_throughput_20261021_provisional.json`

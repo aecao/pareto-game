@@ -67,8 +67,8 @@
     }
     check(commute?.dataset === "B08301" && commute.period === "2020-2024"
       && commute.universe === "Workers age 16 years and over"
-      && Array.isArray(commute.source_geographies) && commute.source_geographies.length === 2
-      && commute.source_geographies.every((geography) => /^3606102380[23]$/.test(geography.geoid)
+      && Array.isArray(commute.source_geographies) && commute.source_geographies.length === 3
+      && commute.source_geographies.every((geography) => /^3606102380[234]$/.test(geography.geoid)
         && integer(geography.pie_total))
       && Array.isArray(commute.modes) && commute.modes.length === 10
       && commute.modes.every((mode) => typeof mode.label === "string" && integer(mode.estimate) && integer(mode.moe))

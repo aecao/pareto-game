@@ -1,46 +1,88 @@
 {
-  "schema_version": 1,
+  "schema_version": 3,
   "model": "Roosevelt Island transit-constrained residential capacity",
-  "status": "Illustrative screening model with selected 2020-2024 ACS proxy inputs; transit demand and capacity assumptions remain provisional.",
+  "status": "Illustrative screening model with 2020-2024 ACS estimates for the three-tract Roosevelt Island proxy; transit demand and capacity assumptions remain provisional.",
   "parameters": {
-    "hh_existing": 3622,
-    "workers_per_hh": 1.0234676974047487,
-    "in_person": 0.7766387914755867,
-    "transit_share": 0.7266411948593261,
+    "hh_existing": 5175,
+    "hh_existing_moe": 514,
+    "workers_per_hh": 1.1006763285024155,
+    "in_person": 0.7779143258426966,
+    "transit_share": 0.7546829158203566,
     "peak_hour_share": 0.3,
+    "current_population": 11520,
+    "current_population_moe": 1071,
+    "average_household_size": 2.0867845410628014,
+    "average_household_size_moe": 0.14120219650979293,
     "split": {
-      "subway": 0.8991395793499044,
-      "bus": 0.06548757170172084,
+      "subway": 0.9150717703349283,
+      "bus": 0.049342105263157895,
       "tram": 0,
-      "ferry": 0.03537284894837476
+      "ferry": 0.035586124401913874
     },
     "tram": {
       "headway_min": 7.5,
       "capacity": 109,
-      "planning_load": 0.85
+      "planning_load": 0.85,
+      "daily_trips": 109
     },
     "subway": {
       "tph": 8,
-      "train_capacity": 1100
+      "train_capacity": 1100,
+      "daily_m_trips": 115,
+      "daily_f_trips": 37,
+      "f_train_capacity": 2100
     },
     "bus": {
       "trips_per_hour": 4,
-      "passengers_per_bus": 51
+      "passengers_per_bus": 51,
+      "daily_trips": 47
     },
     "ferry": {
       "headway_min": 20,
       "capacity": 150,
       "planning_load": 0.85,
-      "onboard_load": 0.5
+      "onboard_load": 0.5,
+      "daily_trips": 39
     }
   },
   "subway_arrival_load_scenarios": [0.5, 0.7, 0.85],
   "default_subway_arrival_load": 0.7,
+  "slider_ranges": {
+    "subway_headway_min": {
+      "min": 5,
+      "max": 15,
+      "step": 0.5,
+      "status": "ASSUMPTION: sensitivity range for AM-peak subway headway; scheduled 8 tph is the 7.5-minute baseline."
+    },
+    "bus_headway_min": {
+      "min": 5,
+      "max": 30,
+      "step": 1,
+      "status": "ASSUMPTION: sensitivity range for AM-peak bus headway; scheduled 4 trips/hour is the 15-minute baseline."
+    }
+  },
+  "tramway_ridership_estimate": {
+    "month": "2026-08",
+    "monthly_riders": 137711,
+    "days_in_month": 31,
+    "source_url": "https://kjihacheol.com/nyc-ridership?station=nyc-ridership-ri-tramway-tram2&lang=en",
+    "source_description": "Third-party summary of an estimate attributed to MTA public payment data.",
+    "attribution_status": "The user identifies this as Roosevelt Island Tramway ridership. The linked page labels it as an NYC subway station and ranks it among subway stations; mode attribution is provisional pending official Tramway confirmation.",
+    "period_note": "Monthly total divided by all calendar days. No weekday, time-of-day, or travel-direction breakdown is provided."
+  },
+  "tramway_crowding_scenario": {
+    "peak_load_factor": 1,
+    "status": "ASSUMPTION: the user reports that the Tramway is often at full capacity. The AM-peak scenario assumes every scheduled departure in the selected hour is filled to the nominal 109-passenger capacity; this is not an observed hourly count."
+  },
+  "acs_demand_identified": ["subway", "bus", "ferry"],
+  "daily_service_date": "2026-10-21",
   "selected_peak_hour": "07:00-08:00",
   "selected_peak_direction": "Roosevelt Island to Manhattan",
   "replace_with_real_data": [
     "MTA observed AM-peak station entries and M-train passenger arrival loads; GTFS schedule is not observed loading",
     "Tram observed peak-hour counts by direction and period-specific schedule verification",
+    "Verify the mode attribution of the August 2026 Tramway ridership estimate and obtain peak-hour counts by direction",
+    "Verify the Tramway full-load AM-peak scenario against observed passenger loads by departure",
     "Astoria ferry vessel assignments, actual operating record, and passenger loads at the island stop",
     "Roosevelt Island Tram commute share, commuter-rail riders' first RI boarding mode, and ACS departure-time/peak-hour share",
     "NYCT planning-load guidance for 8-car trains; the user-provided 1,680 passengers is total R160A train capacity, not a comfortable-load target"
@@ -48,21 +90,50 @@
   "replaced_from_collected_data": [
     {
       "parameter": "hh_existing",
-      "value": 3622,
+      "value": 5175,
       "source": "assets/income/block-groups.json (2020-2024 ACS B19001)",
-      "status": "Sum of seven block groups in Manhattan Census Tracts 238.02 and 238.03; approximate 90% MOE ±404; two-tract Roosevelt Island proxy, not an island-boundary estimate."
+      "status": "Sum of 11 block groups in Manhattan Census Tracts 238.02, 238.03 and 238.04; approximate 90% MOE ±514 using root-sum-of-squares; three-tract Roosevelt Island proxy."
     },
     {
       "parameter": "workers_per_hh",
-      "value": 1.0234676974047487,
-      "source": "assets/transit/roosevelt_island_commute_modes_2020_2024.json (B08301) divided by assets/income/block-groups.json (B19001)",
-      "status": "3,707 workers age 16+ divided by 3,622 estimated households in the same two-tract proxy; ratio of ACS estimates, not a directly published household statistic."
+      "value": 1.1006763285024155,
+      "source": "assets/income/transport-tracts.json (B08301) divided by assets/income/block-groups.json (B19001)",
+      "status": "5,696 workers age 16+ divided by 5,175 estimated households in the same three-tract proxy; ratio of ACS estimates, not a directly published household statistic."
     },
     {
       "parameter": "in_person",
-      "value": 0.7766387914755867,
-      "source": "assets/transit/roosevelt_island_commute_modes_2020_2024.json (2020-2024 ACS B08301)",
-      "status": "(3,707 workers - 828 worked from home) / 3,707 = 77.66%; approximate 90% MOEs are ±509 for workers and ±237 for work-from-home estimate."
+      "value": 0.7779143258426966,
+      "source": "assets/income/transport-tracts.json (2020-2024 ACS B08301)",
+      "status": "(5,696 workers - 1,265 worked from home) / 5,696 = 77.79%; approximate 90% MOEs are ±680 for workers and ±337 for work-from-home estimate."
+    },
+    {
+      "parameter": "transit_share",
+      "value": 0.7546829158203566,
+      "source": "assets/income/transport-tracts.json (B08301)",
+      "status": "3,344 ACS Bus, Subway and Ferry workers divided by 4,431 in-person workers in the same three-tract proxy; excludes modes that are not directly represented by the Transit 2 capacity model."
+    },
+    {
+      "parameter": "split",
+      "value": {
+        "subway": 0.9150717703349283,
+        "bus": 0.049342105263157895,
+        "tram": 0,
+        "ferry": 0.035586124401913874
+      },
+      "source": "assets/income/transport-tracts.json (B08301)",
+      "status": "Normalized among 3,060 Subway, 165 Bus and 119 Ferry ACS worker estimates. ACS does not identify Roosevelt Island Tram riders separately; Tram is excluded from the fixed-share baseline, not treated as observed zero ridership."
+    },
+    {
+      "parameter": "current_population",
+      "value": 11520,
+      "source": "assets/population/tract.json (2020-2024 ACS B01003)",
+      "status": "Sum of the three Roosevelt Island proxy tracts; approximate 90% MOE ±1,071 using root-sum-of-squares. Total population includes group quarters."
+    },
+    {
+      "parameter": "average_household_size",
+      "value": 2.0867845410628014,
+      "source": "2020-2024 ACS B25010_001E, B25010_001M; https://www2.census.gov/programs-surveys/acs/summary_file/2024/table-based-SF/data/5YRData/acsdt5y2024-b25010.dat; tract estimates weighted by B19001 household counts",
+      "status": "Household-weighted average of 2.07 ±0.22, 1.99 ±0.25 and 2.21 ±0.27 people per occupied household for tracts 238.02, 238.03 and 238.04. Approximate composite 90% MOE ±0.14 holds household weights fixed and does not include uncertainty in those weights; used only to convert modeled additional households to residents."
     },
     {
       "parameter": "subway.tph",
@@ -89,6 +160,36 @@
       "status": "User-approved generic 40-foot low-floor bus planning assumption; not verified Q102 vehicle capacity. Four trips therefore represent 204 gross scheduled passenger places before subtracting modeled demand."
     },
     {
+      "parameter": "subway.daily_m_trips",
+      "value": 115,
+      "source": "POSTGIS/logs/profile_roosevelt_island_subway_20261021.json",
+      "status": "Scheduled southbound M trips departing Roosevelt Island on the selected weekday service date; planned trips, not verified operations or boarding availability."
+    },
+    {
+      "parameter": "subway.daily_f_trips",
+      "value": 37,
+      "source": "POSTGIS/logs/profile_roosevelt_island_subway_20261021.json",
+      "status": "Scheduled southbound F trips departing Roosevelt Island on the selected weekday service date, including its night service; planned trips, not verified operations or boarding availability."
+    },
+    {
+      "parameter": "bus.daily_trips",
+      "value": 47,
+      "source": "POSTGIS/logs/profile_roosevelt_island_q102_20261021.json",
+      "status": "Scheduled Q102 trips from Roosevelt Island to Queens on the selected weekday service date; this is Q102 only."
+    },
+    {
+      "parameter": "tram.daily_trips",
+      "value": 109,
+      "source": "POSTGIS/logs/profile_roosevelt_island_tram_20261021.json",
+      "status": "Scheduled Roosevelt Island-to-Manhattan Tram trip definitions on the selected weekday service date; observed operation and actual capacity are unverified."
+    },
+    {
+      "parameter": "ferry.daily_trips",
+      "value": 39,
+      "source": "POSTGIS/logs/profile_roosevelt_island_ferry_20261021.json",
+      "status": "Scheduled Astoria-route departures from Roosevelt Island on the selected weekday service date; Queens and Manhattan journeys share these sailings."
+    },
+    {
       "parameter": "tram.capacity",
       "value": 109,
       "source": "POSTGIS/data/derived/roosevelt_island_tram_throughput_20261021_provisional.json",
@@ -107,6 +208,6 @@
       "status": "Illustrative NYC Ferry fleet class; vessel assignment to a selected trip is unknown."
     }
   ],
-  "provenance_note": "Households use 2020-2024 ACS B19001 and workers/work-from-home use B08301 for Manhattan Census Tracts 238.02 and 238.03, a documented Roosevelt Island proxy. Approximate 90% MOEs: 3,622 households ±404; 3,707 workers ±509; 828 working from home ±237. ACS direct-mode counts are Subway 1,881, Bus 137, and Ferry 74; the transit share is these 2,092 workers divided by 2,879 in-person workers, and the mode split is normalized across those three modes. ACS Rail (26 workers) is excluded from independent RI capacity because there is no commuter-rail boarding service on the island; first-leg access is unknown. ACS has no Tram category, so its zero baseline split is not evidence of zero Tram riders; the Tram is available only in the full-reallocation scenario. The selected weekday 07:00-08:00 schedule has 8 southbound M trains (1,100 passengers/train retained as the spec planning capacity at your direction) and 4 Q102 departures to Queens. The Astoria Ferry has 3 island departures, represented by a 20-minute equivalent headway despite irregular actual gaps.",
+  "provenance_note": "Households use 2020-2024 ACS B19001; population uses B01003; workers and commute modes use B08301 for Manhattan Census Tracts 238.02, 238.03 and 238.04, the three-tract Roosevelt Island proxy. Approximate 90% MOEs: 5,175 households ±514; 11,520 residents ±1,071; 5,696 workers ±680; 1,265 worked from home ±337. ACS direct-mode estimates are Subway 3,060, Bus 165 and Ferry 119. The displayed demand overlay applies the selected peak-hour share to those ACS usual-commute estimates; it is not observed ridership and excludes Tram demand because ACS does not identify Tram riders separately. ACS Rail is excluded from independent RI capacity because there is no commuter-rail boarding service on the island; first-leg access is unknown. The household-size conversion uses the household-weighted 2020-2024 ACS B25010 average of 2.087 people per occupied household (approximate MOE ±0.141, holding weights fixed). Current B01003 population includes group-quarters residents; added households are converted using occupied-household size. The selected weekday 07:00-08:00 schedule has 8 southbound M trains (1,100 passengers/train retained as the spec planning capacity at your direction) and 4 Q102 departures to Queens. The Astoria Ferry has 3 island departures, represented by a 20-minute equivalent headway despite irregular actual gaps. Whole-weekday totals use scheduled Roosevelt Island-to-off-island departures on 2026-10-21: 115 M and 37 F trains, 47 Q102 buses, 109 Tram trips, and 39 Astoria Ferry sailings. The user-provided 2,100-passenger F capacity is applied to the F night trips; all service-day totals are schedules, not verified operations.",
   "source_note": "Values and formulas transcribed from roosevelt_island_transit_capacity_spec.md sections 2-7. Values marked in replace_with_real_data are unresolved data needs."
 }
