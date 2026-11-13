@@ -273,19 +273,23 @@ function fitSitingMap() {
 }
 
 function setStudyMode(mode) {
-  if (!["exploration", "siting", "connectivity", "market", "housing", "income"].includes(mode)) throw new Error("Unknown study mode.");
+  if (!["exploration", "siting", "connectivity", "market", "housing", "income", "transit", "transit2"].includes(mode)) throw new Error("Unknown study mode.");
   document.body.dataset.mode = mode;
   const isSiting = mode === "siting";
   const isConnectivity = mode === "connectivity";
   const isMarket = mode === "market";
+  const isTransit = mode === "transit";
+  const isTransit2 = mode === "transit2";
   const isHousing = mode === "housing";
   const isIncome = mode === "income";
   document.querySelector(".workspace").classList.toggle("is-housing", isHousing);
   document.querySelector(".workspace").classList.toggle("is-siting", isSiting);
   document.querySelector(".workspace").classList.toggle("is-connectivity", isConnectivity);
   document.querySelector(".workspace").classList.toggle("is-market", isMarket);
+  document.querySelector(".workspace").classList.toggle("is-transit", isTransit);
+  document.querySelector(".workspace").classList.toggle("is-transit2", isTransit2);
   document.querySelector(".workspace").classList.toggle("is-income", isIncome);
-  document.querySelectorAll("[data-mode]").forEach((button) => {
+  document.querySelectorAll(".mode-switch button[data-mode]").forEach((button) => {
     const active = button.dataset.mode === mode;
     button.classList.toggle("is-active", active);
     button.setAttribute("aria-pressed", String(active));
@@ -293,9 +297,11 @@ function setStudyMode(mode) {
   document.querySelectorAll(".siting-only").forEach((element) => { element.hidden = !isSiting; });
   document.querySelectorAll(".connectivity-only").forEach((element) => { element.hidden = !isConnectivity; });
   document.querySelectorAll(".market-only").forEach((element) => { element.hidden = !isMarket; });
+  document.querySelectorAll(".transit-only").forEach((element) => { element.hidden = !isTransit; });
+  document.querySelectorAll(".transit2-only").forEach((element) => { element.hidden = !isTransit2; });
   document.querySelectorAll(".housing-only").forEach((element) => { element.hidden = !isHousing; });
   document.querySelectorAll(".income-only").forEach((element) => { element.hidden = !isIncome; });
-  document.querySelectorAll(".map-only").forEach((element) => { element.hidden = isMarket || isHousing; });
+  document.querySelectorAll(".map-only").forEach((element) => { element.hidden = isMarket || isHousing || isTransit || isTransit2; });
   document.querySelector(".map-shell").setAttribute("aria-label", isIncome
     ? incomeDataset.value === "housing_mode"
       ? "Interactive housing by mode map of residential lots in the Queens siting pilot area"
@@ -329,6 +335,10 @@ function setStudyMode(mode) {
     }
   } else if (isMarket) {
     loadMarket();
+  } else if (isTransit) {
+    loadTransit();
+  } else if (isTransit2) {
+    loadTransit2();
   } else if (isHousing) {
     loadHousing();
   } else if (isIncome) {
@@ -348,7 +358,7 @@ function setStudyMode(mode) {
   }
 }
 
-document.querySelectorAll("[data-mode]").forEach((button) => {
+document.querySelectorAll(".mode-switch button[data-mode]").forEach((button) => {
   button.addEventListener("click", () => setStudyMode(button.dataset.mode));
 });
 sitingForm.addEventListener("submit", (event) => { event.preventDefault(); updateSiting(); });

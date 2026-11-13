@@ -1,0 +1,52 @@
+{
+  "status": "provisional illustration only; not a validated throughput estimate",
+  "user_approval": "Illustrative calculation using the local tram feed and historical cabin capacity; 2026-11-12",
+  "service_date": "2026-10-21",
+  "service_day_definition": "GTFS service date: includes departures after midnight represented as 24:00 or later; not a midnight-to-midnight count.",
+  "mode": "Roosevelt Island Tram",
+  "crossing": {
+    "island_endpoint": "Roosevelt Island",
+    "mainland_endpoint": "Manhattan",
+    "from_roosevelt_island_direction": "Roosevelt Island to Manhattan",
+    "to_roosevelt_island_direction": "Manhattan to Roosevelt Island",
+    "queens_connection": "No direct tram crossing to Queens; not a zero capacity for all island-to-Queens modes."
+  },
+  "metric": "scheduled passenger places under full occupancy",
+  "units": "passenger places per service day",
+  "assumptions_and_sources": {
+    "trip_count": {
+      "source_profile": "logs/profile_roosevelt_island_tram_20261021.json",
+      "route_id": "10092",
+      "trips_from_island": 109,
+      "trips_to_island": 109,
+      "warning": "Local feed service patterns and stop-to-stop times require independent verification; service-day counts include five departures after midnight per direction."
+    },
+    "passengers_per_cabin": {
+      "value": 109,
+      "source": "http://readme.readmedia.com/Second-Cabin-Launched-on-Roosevelt-Island-Tram/1757145",
+      "source_date": "2010-10-25",
+      "source_description": "RIOC-attributed modernization release: 109 passengers plus one attendant per cabin.",
+      "warning": "This historical specification has not been independently confirmed for October 2026."
+    },
+    "full_occupancy": "ASSUMPTION: every scheduled trip is operated and loaded to 109 passengers; no closures, service disruptions or capacity restrictions."
+  },
+  "result": {
+    "from_roosevelt_island_passenger_places": 11881,
+    "to_roosevelt_island_passenger_places": 11881,
+    "both_directions_passenger_places": 23762,
+    "formula": "109 scheduled trips per direction x 109 passengers per trip"
+  },
+  "interpretation": [
+    "These are modeled passenger places, not observed passengers, demand, unique people or guaranteed operating capacity.",
+    "The combined figure counts directional trips, not people making round trips.",
+    "The count uses a GTFS service day rather than midnight-to-midnight and should not be directly combined with figures based on a different day definition.",
+    "The 109-passenger assumption excludes the attendant and may not apply during restrictions or to the selected date.",
+    "Do not use the illustration as a validated scenario baseline until the schedule and cabin capacity are verified."
+  ],
+  "input_sha256": {
+    "calendar.parquet": "30ae1dd2448d441569ec05378494189a98b42d422a30e8c10c14ed8935f3be48",
+    "calendar_dates.parquet": "98517590202edab254a492514bd1f502bf836768d157935065fadc8c77c5bb32",
+    "trips.parquet": "2951cabff43efedd943926704838cc3334ae0c2488650bed845adcca93065833",
+    "stop_times.parquet": "f8e549cf4ddd4c563cccfa3e9b0296eadd2a2f3a8742de233b6075ac6e628e94"
+  }
+}

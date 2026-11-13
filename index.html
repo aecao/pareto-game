@@ -23,6 +23,8 @@
         <button type="button" data-mode="exploration" aria-pressed="true" class="is-active">Explore</button>
         <button type="button" data-mode="siting" aria-pressed="false">Siting</button>
         <button type="button" data-mode="connectivity" aria-pressed="false">Connectivity</button>
+        <button type="button" data-mode="transit" aria-pressed="false">Transit</button>
+        <button type="button" data-mode="transit2" aria-pressed="false">Transit 2</button>
         <button type="button" data-mode="market" aria-pressed="false">Market</button>
         <button type="button" data-mode="housing" aria-pressed="false">Housing</button>
         <button type="button" data-mode="income" aria-pressed="false">Data</button>
@@ -135,6 +137,56 @@
             <p>Biking uses a separate directed LION network at an assumed 13 mph, with dismount-and-walk links at 3 mph. Explicit bicycle directions override street traffic directions; untagged ordinary streets follow their one-ways. Untagged pedestrian paths assume dismount access. Stairs, unknown bicycle directions, and undesignated vehicle-only roads, highways and tunnels are excluded. Proposed bridges assume two-way cycling. Turn restrictions, bicycle bans, slopes, traffic stress and access permissions remain incomplete.</p>
             <p>Roosevelt Island internal routing is provisional. No transit, vehicle, rent or property-value effects are modeled. Siting rankings are unchanged.</p>
             <a id="connectivity-download" href="assets/connectivity/walking.json?v=biking-origins-v1" download>Download selected origin and mode snapshot (JSON)</a>
+          </details>
+        </section>
+
+        <section class="transit-only transit-parameters" hidden aria-labelledby="transit-heading">
+          <span class="eyebrow">BASELINE / OCTOBER 21, 2026</span>
+          <h1 id="transit-heading">Transit</h1>
+          <p class="section-note">Explore theoretical scheduled passenger places to and from Roosevelt Island.</p>
+          <label for="transit-ferry-capacity">Ferry capacity scenario</label>
+          <select id="transit-ferry-capacity" disabled>
+            <option value="150">150 passengers per vessel</option>
+            <option value="350">350 passengers per vessel</option>
+          </select>
+          <p class="section-note">Illustrative fleet classes, not verified trip assignments or confirmed bounds.</p>
+          <p id="transit-state" role="status" aria-live="polite">Select Transit to load the baseline.</p>
+          <p id="transit-error" class="siting-error" role="alert" hidden></p>
+          <button id="transit-retry" type="button" class="secondary-button" hidden>Retry loading transit data</button>
+          <details class="method-note">
+            <summary>Source snapshots</summary>
+            <p>These are the reviewed provisional calculations, not a live schedule or a forecast.</p>
+            <p><a href="assets/transit/roosevelt_island_subway_throughput_20261021_provisional.json" download>Subway snapshot</a></p>
+            <p><a href="assets/transit/roosevelt_island_tram_throughput_20261021_provisional.json" download>Tram snapshot</a></p>
+            <p><a href="assets/transit/roosevelt_island_q102_throughput_20261021_provisional.json" download>Q102 snapshot</a></p>
+            <p><a href="assets/transit/roosevelt_island_ferry_throughput_20261021_provisional.json" download>Ferry snapshot</a></p>
+            <p><a href="assets/transit/roosevelt_island_commute_modes_2020_2024.json" download>Resident commute-mode summary</a></p>
+          </details>
+        </section>
+
+        <section class="transit2-only transit2-parameters" hidden aria-labelledby="transit2-heading">
+          <span class="eyebrow">SCREENING MODEL / AM PEAK</span>
+          <h1 id="transit2-heading">Transit 2</h1>
+          <p class="section-note">Adjust the screening assumptions. Results estimate additional households supported by off-island AM peak transit capacity.</p>
+          <fieldset id="transit2-fields" disabled>
+            <label for="transit2-arrival-load">Subway arrival load: <output id="transit2-arrival-load-value">70%</output></label>
+            <input id="transit2-arrival-load" type="range" min="0.5" max="0.85" step="0.05" value="0.7">
+            <label for="transit2-peak-share">Daily trips in peak hour: <output id="transit2-peak-share-value">30%</output></label>
+            <input id="transit2-peak-share" type="range" min="0.1" max="0.6" step="0.05" value="0.3">
+            <label for="transit2-in-person">In-person work share: <output id="transit2-in-person-value">75%</output></label>
+            <input id="transit2-in-person" type="range" min="0.5" max="1" step="any" value="0.75">
+            <label for="transit2-tram-headway">Tram headway: <output id="transit2-tram-headway-value">7.5 min</output></label>
+            <input id="transit2-tram-headway" type="range" min="5" max="20" step="0.5" value="7.5">
+            <label for="transit2-ferry-headway">Ferry headway: <output id="transit2-ferry-headway-value">25 min</output></label>
+            <input id="transit2-ferry-headway" type="range" min="10" max="60" step="1" value="25">
+          </fieldset>
+          <p id="transit2-state" role="status" aria-live="polite">Select Transit 2 to load the model.</p>
+          <p id="transit2-error" class="siting-error" role="alert" hidden></p>
+          <button id="transit2-retry" type="button" class="secondary-button" hidden>Retry loading model</button>
+          <details class="method-note">
+            <summary>Remaining data gaps and assumptions</summary>
+            <p id="transit2-replacements"></p>
+            <a href="assets/transit/transit2-config.json" download>Download model configuration (JSON)</a>
           </details>
         </section>
 
@@ -365,6 +417,65 @@
           <p class="section-note">Counts are source street nodes reachable within the budget; "Manhattan/other" covers nodes off the island and outside Queens.</p>
         </section>
       </aside>
+      <section class="transit-only transit-results" hidden aria-labelledby="transit-results-heading">
+        <span class="eyebrow">EXISTING SERVICE / HISTORICAL WEEKDAY</span>
+        <h2 id="transit-results-heading">Roosevelt Island transit capacity</h2>
+        <p class="transit-intro">Scheduled passenger places per GTFS service day, Wednesday October 21, 2026. Some trips after midnight belong to that service day; it is not a midnight-to-midnight count.</p>
+        <p class="siting-warning">Provisional full-vehicle illustrations, not observed passengers, demand, available boarding space or guaranteed operating capacity. Do not sum rows: subway segments and ferry journeys can share the same vehicles and passengers.</p>
+        <p class="siting-warning">Tram figures require independent verification of both the local timetable and the historical cabin capacity before use as a validated baseline.</p>
+        <div id="transit-content" hidden>
+          <div class="transit-table-scroll" tabindex="0" role="region" aria-label="Directional transit capacity table">
+            <table class="ranking-table transit-table">
+              <caption>Manhattan and Queens connections, separated by direction. Ferry Manhattan journeys stop in Queens without a transfer; ferry destinations share the same vessel capacity.</caption>
+              <thead><tr><th scope="col">Mode</th><th scope="col">Connection</th><th scope="col">To Roosevelt Island</th><th scope="col">From Roosevelt Island</th><th scope="col">Basis</th></tr></thead>
+              <tbody id="transit-values"></tbody>
+            </table>
+          </div>
+          <section class="transit-commute" aria-labelledby="transit-commute-heading">
+              <h3 id="transit-commute-heading">Resident commute modes originating on Roosevelt Island</h3>
+              <p id="transit-commute-summary" class="section-note"></p>
+              <div class="transit-table-scroll" tabindex="0" role="region" aria-label="Roosevelt Island resident commute modes">
+                <table class="ranking-table transit-table transit-commute-table">
+                  <caption>2020–2024 ACS B08301 estimates summed for the two-tract Roosevelt Island proxy. Approximate 90% margins of error are shown; categories are not route-specific.</caption>
+                  <thead><tr><th scope="col">Commute mode</th><th scope="col">Estimated workers</th><th scope="col">Share</th><th scope="col">Approx. +/- MOE</th></tr></thead>
+                  <tbody id="transit-commute-values"></tbody>
+                </table>
+              </div>
+              <p class="siting-warning">These are resident-based commute estimates, not origin-destination flows, observed ridership or available transit capacity. They should not be added to the scheduled passenger-place figures above.</p>
+          </section>
+          <section class="transit-notes" aria-labelledby="transit-method-heading">
+            <h3 id="transit-method-heading">How to read these figures</h3>
+            <p><strong>Subway:</strong> 115 M and 37 F scheduled trains in each direction, with user-specified 1,680 and 2,100 passenger places respectively. Through trains cross both island boundaries; counts on the two segments overlap. Consists and capacity are assumptions, not verified assignments.</p>
+            <p><strong>Tram:</strong> 109 trips per direction at an assumed 109 passengers per cabin. The feed's timing and the 2010 cabin-capacity specification need verification for this date.</p>
+            <p><strong>Bus:</strong> Q102 only, at 51 places per bus, a user-approved generic planning assumption rather than verified Q102 capacity. Island-only buses are excluded. Road capacity is shared with private vehicles.</p>
+            <p><strong>Ferry:</strong> Each displayed journey assumes all vessel places are devoted to that journey. The same vessels serve both Queens and Manhattan, and may already carry passengers; results are neither independently additive nor actual available boarding space. Actual vessel assignments are unknown.</p>
+            <p>Walking, cycling and private-vehicle capacity have not yet been calculated. Proposed bridge scenarios are not modeled in this view.</p>
+          </section>
+        </div>
+      </section>
+      <section class="transit2-only transit2-results" hidden aria-labelledby="transit2-results-heading">
+        <span class="eyebrow">MODEL OUTPUT / HOUSEHOLD CAPACITY</span>
+        <h2 id="transit2-results-heading">Transit-constrained residential capacity</h2>
+        <p id="transit2-intro" class="transit-intro"></p>
+        <p class="siting-warning">Illustrative engineering headroom, not a housing entitlement or forecast. The model excludes pedestrian/internal circulation, Motorgate, emergency egress, utilities, schools and open space. At high figures, external network constraints may bind first.</p>
+        <div id="transit2-content" hidden>
+          <section class="transit2-summary" aria-labelledby="transit2-summary-heading">
+            <h3 id="transit2-summary-heading">Mode headroom at selected arrival load</h3>
+            <div id="transit2-headroom" class="transit2-cards"></div>
+          </section>
+          <section class="transit2-scenarios" aria-labelledby="transit2-scenarios-heading">
+            <h3 id="transit2-scenarios-heading">Subway arrival-load scenarios</h3>
+            <div class="transit-table-scroll" tabindex="0" role="region" aria-label="Transit 2 subway scenarios">
+              <table class="ranking-table transit-table">
+                <caption>Fixed mode split uses the binding mode. Full reallocation sums all mode headroom. Values are rounded for display.</caption>
+                <thead><tr><th scope="col">Arrival load</th><th scope="col">Subway headroom</th><th scope="col">Subway-only households</th><th scope="col">Fixed split households</th><th scope="col">Binding mode</th><th scope="col">Full reallocation households</th></tr></thead>
+                <tbody id="transit2-scenarios"></tbody>
+              </table>
+            </div>
+          </section>
+          <p id="transit2-provenance" class="section-note"></p>
+        </div>
+      </section>
       <section class="market-only market-results" hidden aria-label="Market results">
         <div data-market-panel="series">
         <span class="eyebrow">MARKET CONTEXT / NO SPATIAL CROSSWALK</span>
@@ -508,6 +619,10 @@
     <script src="connectivity.js?v=biking-origins-v1"></script>
     <script src="market-model.js"></script>
     <script src="market.js"></script>
+    <script src="transit-model.js"></script>
+    <script src="transit.js"></script>
+    <script src="transit2-model.js"></script>
+    <script src="transit2.js"></script>
     <script src="model-interaction.js"></script>
     <script src="scenario-model.js"></script>
     <script src="scenario.js"></script>

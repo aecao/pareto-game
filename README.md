@@ -703,6 +703,78 @@ backend. Local changes are not published until committed and pushed.
 
 Building and place assets belong in [`assets/buildings/`](assets/buildings/); see its README for the expected GeoJSON format.
 
+## Transit mode
+
+Transit displays the provisional Wednesday, October 21, 2026 GTFS service-day
+passenger-place calculations for subway, tram, Q102 and Astoria ferry, by
+direction and connection to Manhattan or Queens. The 150- and 350-place ferry
+settings are separate illustrations, not verified fleet assignments or bounds;
+landing-level detail remains visible. Subway segments and ferry journey options
+overlap and must not be summed. The tram timetable and historical cabin
+capacity need verification; Q102 uses a generic 51-place bus assumption.
+These are full-vehicle scheduled places, not ridership or available boarding
+capacity. Walking, cycling, private vehicles and proposed scenarios are not
+calculated here.
+
+Transit also includes a separate resident commute-mode summary: 2020–2024 ACS
+B08301 estimates summed for Manhattan Census Tracts 238.02 and 238.03, the
+documented Roosevelt Island proxy. It reports 3,707 estimated workers:
+car/truck/van/taxi 434, bus 137, subway 1,881, rail 26, ferry 74, motorcycle
+0, bicycle 38, walked 154, other 135, and worked from home 828. Approximate
+90% margins of error use root-sum-of-squares across the two tract MOEs. This
+is a resident-based means-of-transportation estimate, not an origin-destination
+flow, route-specific ridership count, or capacity measure, and must not be added
+to the scheduled passenger-place table.
+
+### Transit 2 mode
+
+**Transit 2** is a browser-based implementation of the capacity-screening
+model in `roosevelt_island_transit_capacity_spec.md` section 6. Sliders adjust
+subway arrival load, peak-hour share, in-person share, tram headway and ferry
+headway. The mode reports mode headroom and the requested 50%, 70% and 85%
+subway arrival-load scenarios using fixed-split and full-reallocation household
+results. All model parameters and provenance are in
+`assets/transit/transit2-config.json`; unresolved Section 7 data needs are
+shown in the interface and stored under `replace_with_real_data`. This is an
+illustrative screening model, not a forecast or entitlement calculation.
+Previously collected transit-input replacements include the 109-passenger
+historical tram cabin figure, the 7.5-minute rush-hour tram reference, and the
+150-passenger ferry fleet class. Each replacement includes provenance and a
+verification status under `replaced_from_collected_data`; none is treated as fully validated
+for the modeled date. Daily GTFS trip counts were not substituted for peak
+headways or peak arrival loads.
+
+The Transit 2 household count, workers per household and in-person work share
+now use 2020-2024 ACS estimates for Manhattan Census Tracts 238.02 and 238.03:
+3,622 households (approximate 90% MOE ±404), 3,707 workers (±509) and 828
+working from home (±237). This is a two-tract Roosevelt Island proxy, not an
+island-boundary count. The Transit 2 split uses ACS B08301 counts for direct
+services: subway 1,881, bus 137, and ferry 74. Shares are normalized across
+those categories, and transit share is conditional on in-person workers to
+avoid applying work-from-home exclusion twice. The 26 ACS rail workers are
+excluded from independent Roosevelt Island capacity because no commuter-rail
+service boards on the island. ACS has no Tram category, so Tram has zero
+baseline share in this calculation (not an estimate of zero Tram ridership);
+its capacity is available only in the full-reallocation scenario.
+
+The selected October 21, 2026 M-train GTFS hour is 07:00-08:00, with 8
+scheduled southbound departures; Transit 2 now uses 8 tph. The user selected
+the spec's 1,100 passengers per train pending NYCT planning-load guidance.
+Observed M-train passenger arrival loads remain unavailable. The same hour has
+4 scheduled Q102 departures from Roosevelt Island to Queens (51 gross places
+per bus, a user-approved generic-bus assumption) and 3 scheduled Astoria-route
+ferry departures, represented as a 20-minute equivalent headway. Ferry gaps
+are irregular, and vessel assignments and loads are unknown.
+
+The four JSON files in `assets/transit/` are byte-for-byte copies of the
+corresponding `POSTGIS/data/derived/roosevelt_island_*_throughput_20261021_provisional.json`
+calculations; each carries its source and limitations. To refresh, review the
+source calculations and assumptions, update the date, validation and methodology
+text if those change, copy all four snapshots to `assets/transit/`,
+then run `node --test tests/transit-model.test.cjs` and check the display.
+The app loads them on entering Transit and reports load or validation errors
+with a retry control. The snapshots are not automatically recalculated.
+
 ## Market mode
 
 **Market** is a temporary, independent mode for the cleaned StreetEasy monthly

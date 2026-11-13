@@ -1,0 +1,35 @@
+{
+  "status": "Provisional theoretical scheduled capacity using user-specified train assumptions; not observed ridership or available boarding capacity.",
+  "service_date": "2026-10-21",
+  "service_day_definition": "GTFS service date selected at the Roosevelt Island stop; after-midnight service is included under its originating service date. Not a midnight-to-midnight count.",
+  "mode": "subway",
+  "unit": "passenger places per service day per segment and direction",
+  "assumptions_source": "config.yaml: throughput_baseline.subway",
+  "schedule_source": "logs/profile_roosevelt_island_subway_20261021.json",
+  "user_specified_trains": {
+    "M": {"car_model": "R160A", "cars": 8, "length_ft": 482, "passengers_per_train": 1680},
+    "F": {"car_model": "R160A", "cars": 10, "length_ft": 602, "passengers_per_train": 2100}
+  },
+  "calculation_per_segment": {
+    "M_scheduled_trips": 115,
+    "M_passenger_places": 193200,
+    "F_scheduled_trips": 37,
+    "F_passenger_places": 77700,
+    "total_scheduled_trips": 152,
+    "total_passenger_places": 270900,
+    "formula": "(115 * 1680) + (37 * 2100)"
+  },
+  "segments": [
+    {"from": "Manhattan", "to": "Roosevelt Island", "passenger_places": 270900},
+    {"from": "Roosevelt Island", "to": "Queens", "passenger_places": 270900},
+    {"from": "Queens", "to": "Roosevelt Island", "passenger_places": 270900},
+    {"from": "Roosevelt Island", "to": "Manhattan", "passenger_places": 270900}
+  ],
+  "limitations": [
+    "Each direction has 115 M trips and 37 F trips in the source profile. Car model, train length and passenger places are user-specified assumptions, not verified historical train assignments.",
+    "Every scheduled trip is assumed to operate at its stated passenger capacity. Values are theoretical vehicle-place totals, not passenger counts, demand, guaranteed operational throughput or space available to board at Roosevelt Island.",
+    "Northbound trains traverse both the Manhattan-to-island and island-to-Queens segments; southbound trains traverse both the Queens-to-island and island-to-Manhattan segments. Segment figures overlap and must not be added as independent island passenger trips.",
+    "M and F assumptions were applied by route ID to every selected weekday service-day trip, including after-midnight trips; no additional time-of-day cutoff was imposed.",
+    "Capacity, service changes, station access and passenger crowding constraints have not been independently verified."
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "status": "Provisional theoretical scheduled Q102 passenger places; not observed ridership or actual available capacity.",
+  "service_date": "2026-10-21",
+  "service_day_definition": "GTFS service date selected by scheduled trip service_id. Includes after-midnight departures from the preceding stop; not a midnight-to-midnight crossing count.",
+  "mode": "bus",
+  "route": "Q102",
+  "crossing": "Roosevelt Island Bridge, Roosevelt Island and Queens",
+  "unit": "passenger places per service day per direction",
+  "assumptions_source": "config.yaml: throughput_baseline.bus",
+  "schedule_source": "logs/profile_roosevelt_island_q102_20261021.json",
+  "capacity_assumption": {
+    "passengers_per_bus": 51,
+    "approval": "User approved 2026-11-12.",
+    "basis": "NYSDOT sample service guideline for a generic 40-foot low-floor bus, not verified Q102 fleet capacity.",
+    "source": "https://www.dot.ny.gov/divisions/policy-and-strategy/public-trans-respository/Appendix_E_SampleServiceStandards-Policies.pdf",
+    "full_bus_assumption": "Each scheduled trip operates and carries 51 passengers across the bridge."
+  },
+  "segments": [
+    {
+      "from": "Queens",
+      "to": "Roosevelt Island",
+      "scheduled_bus_trips": 48,
+      "passenger_places": 2448,
+      "formula": "48 * 51"
+    },
+    {
+      "from": "Roosevelt Island",
+      "to": "Queens",
+      "scheduled_bus_trips": 47,
+      "passenger_places": 2397,
+      "formula": "47 * 51"
+    }
+  ],
+  "both_directions_passenger_places": 4845,
+  "limitations": [
+    "51 is a user-approved assumption adapted from a sample planning guideline; it is not verified physical or operating capacity for Q102 buses.",
+    "Scheduled bus trips may not operate, and full-bus places are not ridership or guaranteed capacity available to board at an island stop.",
+    "Trips are assigned by GTFS service day, not the exact calendar day of their bridge crossing.",
+    "This counts Q102 trips only, not unscheduled, charter or other potential bridge-crossing bus services.",
+    "Island-only buses are excluded. The user specifies no direct Manhattan bus crossings in this inventory.",
+    "Bus and private-vehicle traffic share bridge road space; independent capacity figures cannot automatically be summed.",
+    "Combined directional places represent crossing opportunities, not unique travelers or round trips."
+  ]
+}

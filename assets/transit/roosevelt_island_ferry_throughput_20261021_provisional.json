@@ -1,0 +1,72 @@
+{
+  "status": "Provisional independent full-vessel journey scenarios; not observed ridership, verified vessel assignments or available island boarding capacity.",
+  "service_date": "2026-10-21",
+  "service_day_definition": "GTFS service date selected at the Roosevelt Island stop. No selected island stop departures are after midnight.",
+  "mode": "ferry",
+  "route": "Astoria",
+  "metric": "Passenger places for a specified journey, assuming every scheduled vessel runs and all its places are dedicated to that journey.",
+  "unit": "passenger places per service day",
+  "assumptions_source": "config.yaml: throughput_baseline.ferry",
+  "schedule_source": "logs/profile_roosevelt_island_ferry_20261021.json",
+  "capacity_source": "https://www.ferry.nyc/about/",
+  "capacity_assumptions": {
+    "passengers_per_vessel_scenarios": [150, 350],
+    "approval": "User approved 2026-11-12.",
+    "interpretation": "NYC Ferry describes vessels of these two capacities, but allocation to these trips is unknown. These are separate sensitivity scenarios, not confirmed lower and upper bounds."
+  },
+  "journeys": [
+    {
+      "from": "Roosevelt Island",
+      "to": "Queens",
+      "options": [
+        {"landing": "Astoria", "trips": 19, "places_150": 2850, "places_350": 6650},
+        {"landing": "Long Island City", "trips": 20, "places_150": 3000, "places_350": 7000}
+      ],
+      "trips": 39,
+      "places_150": 5850,
+      "places_350": 13650
+    },
+    {
+      "from": "Queens",
+      "to": "Roosevelt Island",
+      "options": [
+        {"landing": "Astoria", "trips": 20, "places_150": 3000, "places_350": 7000},
+        {"landing": "Long Island City", "trips": 19, "places_150": 2850, "places_350": 6650}
+      ],
+      "trips": 39,
+      "places_150": 5850,
+      "places_350": 13650
+    },
+    {
+      "from": "Roosevelt Island",
+      "to": "Manhattan",
+      "options": [
+        {"landing": "East 90th St via Astoria", "trips": 19, "places_150": 2850, "places_350": 6650},
+        {"landing": "East 34th St via Long Island City", "trips": 20, "places_150": 3000, "places_350": 7000}
+      ],
+      "trips": 39,
+      "places_150": 5850,
+      "places_350": 13650
+    },
+    {
+      "from": "Manhattan",
+      "to": "Roosevelt Island",
+      "options": [
+        {"landing": "East 90th St via Astoria", "trips": 20, "places_150": 3000, "places_350": 7000},
+        {"landing": "East 34th St via Long Island City", "trips": 19, "places_150": 2850, "places_350": 6650}
+      ],
+      "trips": 39,
+      "places_150": 5850,
+      "places_350": 13650
+    }
+  ],
+  "limitations": [
+    "Manhattan journeys remain on the same boat but call at a Queens landing en route; there is no directly adjacent Manhattan-to-island ferry segment in this schedule.",
+    "Queens and Manhattan journey options share the same 39 vessels at the island; their passenger-place totals are alternatives, not additive. A passenger may disembark in Queens and another board, but capacity available to island passengers depends on actual loads and stop turnover.",
+    "The figures for each journey assume all vessel places are devoted to that journey. They are theoretical gross offers, not actual ridership, verified available places or guaranteed operating capacity.",
+    "The vessel capacities used in the two scenarios are not confirmed assignments or actual minimum and maximum capacities on this service date.",
+    "Counts are planned GTFS trips, not proven operated trips. Rider flows, vessels and weekday service disruptions remain unverified.",
+    "East 34th Street is one Manhattan landing served southbound; the same southbound boats also reach Wall St/Pier 11 via Brooklyn Navy Yard. These are not additional sailings.",
+    "Ferry service-day totals should not be assumed comparable to calendar-day figures without checking time definitions."
+  ]
+}
